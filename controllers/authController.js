@@ -122,8 +122,8 @@ const login = async (req, res, next) => {
       message: 'Login successful',
       data: {
         user: user.toJSON(),
-        token: hashedToken, // Send hashed token to frontend
-        tokenType: 'hashed' // Indicate this is a hashed token
+        token: hashedToken,
+        tokenType: 'hashed'
       }
     });
   } catch (error) {
