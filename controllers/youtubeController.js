@@ -182,11 +182,10 @@ const getAnalysisStatus = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Tìm channel và kiểm tra quyền sở hữu
     const channel = await YouTubeChannel.findOne({
       where: {
         id: id,
-        analyzedBy: req.user.userId // Chỉ lấy channel của user hiện tại
+        analyzedBy: req.user.userId
       }
     });
 
@@ -219,11 +218,10 @@ const getAnalysisResult = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Tìm channel và kiểm tra quyền sở hữu
     const channel = await YouTubeChannel.findOne({
       where: {
         id: id,
-        analyzedBy: req.user.userId // Chỉ lấy channel của user hiện tại
+        analyzedBy: req.user.userId
       }
     });
 
@@ -386,11 +384,10 @@ const updateChannelWarnings = async (req, res, next) => {
       warnings
     } = req.body;
 
-    // Tìm channel và kiểm tra quyền sở hữu
     const channel = await YouTubeChannel.findOne({
       where: {
         id: id,
-        analyzedBy: req.user.userId // Chỉ lấy channel của user hiện tại
+        analyzedBy: req.user.userId
       }
     });
 
@@ -401,7 +398,6 @@ const updateChannelWarnings = async (req, res, next) => {
       });
     }
 
-    // Cập nhật thông tin cảnh báo
     const updateData = {};
     
     if (monetizationWarning !== undefined) {
