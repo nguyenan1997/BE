@@ -84,39 +84,39 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   monetizationWarning: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
-    comment: 'Có cảnh báo kiếm tiền hay không'
+    comment: 'Monetization warning status'
   },
   monetizationWarningReason: {
     type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Nguyên nhân cảnh báo kiếm tiền'
+    comment: 'Monetization warning reason'
   },
   monetizationWarningDate: {
     type: DataTypes.DATE,
     allowNull: true,
-    comment: 'Ngày nhận cảnh báo kiếm tiền'
+    comment: 'Monetization warning date'
   },
   // warning community guidelines
   communityGuidelinesWarning: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
-    comment: 'Có cảnh báo vi phạm cộng đồng hay không'
+    comment: 'Community guidelines warning status'
   },
   communityGuidelinesWarningReason: {
     type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Nguyên nhân cảnh báo vi phạm cộng đồng'
+    comment: 'Community guidelines warning reason'
   },
   communityGuidelinesWarningDate: {
     type: DataTypes.DATE,
     allowNull: true,
-    comment: 'Ngày nhận cảnh báo vi phạm cộng đồng'
+    comment: 'Community guidelines warning date'
   },
   // warning summary
   warnings: {
     type: DataTypes.JSON,
     allowNull: true,
-    comment: 'Tổng hợp tất cả cảnh báo với chi tiết'
+    comment: 'Summary of all warnings with details'
   },
   analyzedBy: {
     type: DataTypes.UUID,
