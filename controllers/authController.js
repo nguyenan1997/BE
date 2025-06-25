@@ -1,6 +1,13 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { Op } = require('sequelize');
+const { 
+  hashToken, 
+  addToken, 
+  getToken, 
+  removeToken, 
+  removeUserTokens 
+} = require('../utils/tokenStore');
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -98,15 +105,25 @@ const login = async (req, res, next) => {
     // Update last login
     await user.update({ lastLoginAt: new Date() });
 
-    // Generate token
-    const token = generateToken(user.id);
+    // Generate original JWT token
+    const originalToken = generateToken(user.id);
+    
+    // Hash the token for frontend
+    const hashedToken = hashToken(originalToken);
+    
+    // Store original token
+    addToken(hashedToken, {
+      originalToken,
+      userId: user.id
+    });
 
     res.json({
       success: true,
       message: 'Login successful',
       data: {
         user: user.toJSON(),
-        token
+        token: hashedToken, // Send hashed token to frontend
+        tokenType: 'hashed' // Indicate this is a hashed token
       }
     });
   } catch (error) {
@@ -149,12 +166,29 @@ const refreshToken = async (req, res, next) => {
       });
     }
 
-    const token = generateToken(user.id);
+    // Generate new original token
+    const newOriginalToken = generateToken(user.id);
+    
+    // Hash the new token for frontend
+    const newHashedToken = hashToken(newOriginalToken);
+    
+    // Remove old token from store
+    const oldToken = req.headers.authorization?.replace('Bearer ', '');
+    if (oldToken) {
+      removeToken(oldToken);
+    }
+    
+    // Store new token
+    addToken(newHashedToken, {
+      originalToken: newOriginalToken,
+      userId: user.id
+    });
 
     res.json({
       success: true,
       data: {
-        token
+        token: newHashedToken,
+        tokenType: 'hashed'
       }
     });
   } catch (error) {
@@ -174,7 +208,14 @@ const logout = async (req, res, next) => {
       });
     }
 
-    // Add token to blacklist (you can use Redis or database)
+    // Remove token from store
+    const tokenData = getToken(token);
+    if (tokenData) {
+      // This is a hashed token, remove it from store
+      removeToken(token);
+    }
+
+    // TODO: Add token to blacklist (you can use Redis or database)
     // For now, we'll use a simple in-memory approach
     // In production, use Redis or database table for blacklisted tokens
     
@@ -196,6 +237,9 @@ const logout = async (req, res, next) => {
 const logoutAll = async (req, res, next) => {
   try {
     const userId = req.user.userId;
+    
+    // Remove all tokens for this user from store
+    removeUserTokens(userId);
     
     // TODO: Implement logout all sessions
     // This would require tracking all active tokens per user

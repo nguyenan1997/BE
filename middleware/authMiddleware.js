@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { getToken } = require('../utils/tokenStore');
 
-// Authenticate JWT token
+// Authenticate JWT token (supports both hashed and original tokens)
 const authenticateToken = async (req, res, next) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({
@@ -14,8 +15,26 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let decoded;
+    let originalToken = token;
+
+    // Check if this is a hashed token
+    const tokenData = getToken(token);
+    if (tokenData) {
+      // This is a hashed token, use the original token
+      originalToken = tokenData.originalToken;
+      decoded = jwt.verify(originalToken, process.env.JWT_SECRET);
+    } else {
+      // This might be an original token (for backward compatibility)
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (jwtError) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid or expired token'
+        });
+      }
+    }
     
     // Check if user exists and is active
     const user = await User.findByPk(decoded.userId);
