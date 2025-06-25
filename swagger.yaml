@@ -1,0 +1,626 @@
+openapi: 3.0.0
+info:
+  title: YouTube Channel Analysis API
+  version: 1.0.0
+  description: |
+    API for analyzing YouTube channel screenshots using Google Gemini AI.
+    
+    ## Features:
+    - User authentication with JWT
+    - YouTube channel analysis with AI
+    - Data isolation (users can only access their own data)
+    
+    ## Authentication:
+    All protected endpoints require a valid JWT token:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+  contact:
+    name: API Support
+    email: support@example.com
+servers:
+  - url: http://localhost:3000
+    description: Development server
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        isActive:
+          type: boolean
+        lastLoginAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    YouTubeChannel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        channelName:
+          type: string
+        subscriberCount:
+          type: string
+        totalViews:
+          type: string
+        estimatedRevenue:
+          type: string
+        watchTime:
+          type: string
+        views48h:
+          type: string
+        views60min:
+          type: string
+        recentVideos:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              views:
+                type: string
+              likes:
+                type: string
+              comments:
+                type: string
+        description:
+          type: string
+        category:
+          type: string
+        joinDate:
+          type: string
+        location:
+          type: string
+        socialLinks:
+          type: object
+        aiAnalysis:
+          type: object
+        imageUrl:
+          type: string
+        originalImageName:
+          type: string
+        analysisStatus:
+          type: string
+          enum: [pending, processing, completed, failed]
+        analysisError:
+          type: string
+        analyzedBy:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        200:
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  message:
+                    type: string
+                    example: "Server is running"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  swagger:
+                    type: string
+                    example: "http://localhost:3000/api-docs"
+  /api/auth/register:
+    post:
+      summary: Register user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, fullName]
+              properties:
+                username:
+                  type: string
+                  minLength: 3
+                  maxLength: 50
+                  pattern: '^[a-zA-Z0-9_]+$'
+                  example: "john_doe"
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  maxLength: 100
+                  example: "password123"
+                fullName:
+                  type: string
+                  maxLength: 100
+                  example: "John Doe"
+      responses:
+        201:
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "User registered successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        409:
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/login:
+    post:
+      summary: Login user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                password:
+                  type: string
+                  example: "password123"
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Login successful"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+        401:
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/profile:
+    get:
+      summary: Get user profile
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/auth/refresh:
+    post:
+      summary: Refresh JWT token
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+        401:
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/youtube/analyze:
+    post:
+      summary: Analyze YouTube channel from images
+      description: Start AI analysis of YouTube channel from image URLs
+      tags: [YouTube Analysis]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                imageUrls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
+                  description: Array of image URLs to analyze
+                  example: ["http://example.com/image1.jpg"]
+                  minItems: 1
+      responses:
+        202:
+          description: Analysis started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Images fetched and analysis started"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: "processing"
+                      message:
+                        type: string
+                        example: "AI analysis is in progress. Check status later."
+                      imageCount:
+                        type: integer
+                      imageUrls:
+                        type: array
+                        items:
+                          type: string
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/youtube/status/{id}:
+    get:
+      summary: Get analysis status
+      description: Check the status of a YouTube channel analysis
+      tags: [YouTube Analysis]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Analysis ID
+      responses:
+        200:
+          description: Status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        enum: [pending, processing, completed, failed]
+                      channelName:
+                        type: string
+                      imageUrl:
+                        type: string
+                      error:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+                      updatedAt:
+                        type: string
+                        format: date-time
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Analysis not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/youtube/result/{id}:
+    get:
+      summary: Get analysis results
+      description: Get completed analysis results for a YouTube channel
+      tags: [YouTube Analysis]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Analysis ID
+      responses:
+        200:
+          description: Results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/YouTubeChannel'
+        400:
+          description: Analysis not completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "Analysis is processing. Please wait or check status."
+                  data:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                      error:
+                        type: string
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Analysis not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/youtube/channels:
+    get:
+      summary: Get user's YouTube channels
+      description: Get list of all YouTube channel analyses for the authenticated user
+      tags: [YouTube Analysis]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Items per page
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        200:
+          description: Channels retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      channels:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                              format: uuid
+                            channelName:
+                              type: string
+                            analysisStatus:
+                              type: string
+                              enum: [pending, processing, completed, failed]
+                            imageUrl:
+                              type: string
+                            createdAt:
+                              type: string
+                              format: date-time
+                            updatedAt:
+                              type: string
+                              format: date-time
+                      pagination:
+                        type: object
+                        properties:
+                          currentPage:
+                            type: integer
+                          totalPages:
+                            type: integer
+                          totalItems:
+                            type: integer
+                          itemsPerPage:
+                            type: integer
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/youtube/channels/{id}:
+    delete:
+      summary: Delete YouTube channel analysis
+      description: Delete a YouTube channel analysis and associated files
+      tags: [YouTube Analysis]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Analysis ID
+      responses:
+        200:
+          description: Analysis deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "YouTube channel deleted successfully"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Analysis not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+tags:
+  - name: System
+    description: System endpoints
+  - name: Authentication
+    description: User authentication and authorization
+  - name: YouTube Analysis
+    description: YouTube channel analysis with AI 
