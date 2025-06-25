@@ -6,16 +6,19 @@ const {
   getAnalysisResult, 
   getAllChannels, 
   deleteChannel,
-  updateChannelWarnings
+  updateChannelWarnings,
+  addChannelManually
 } = require('../controllers/youtubeController');
 const { authenticateToken } = require('../middleware/authMiddleware');
+const { validateAddChannel, validateUpdateWarnings } = require('../validators/youtubeValidator');
 
 // Tất cả routes đều yêu cầu authentication
 router.post('/analyze', authenticateToken, fetchAndAnalyze);
 router.get('/status/:id', authenticateToken, getAnalysisStatus);
 router.get('/result/:id', authenticateToken, getAnalysisResult);
 router.get('/channels', authenticateToken, getAllChannels);
+router.post('/channels', authenticateToken, validateAddChannel, addChannelManually);
 router.delete('/channels/:id', authenticateToken, deleteChannel);
-router.put('/channels/:id/warnings', authenticateToken, updateChannelWarnings);
+router.put('/channels/:id/warnings', authenticateToken, validateUpdateWarnings, updateChannelWarnings);
 
 module.exports = router; 

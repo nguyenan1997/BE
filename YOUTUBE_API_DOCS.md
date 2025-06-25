@@ -1,7 +1,7 @@
 # YouTube Channel Analysis API Documentation
 
 ## Overview
-This API allows you to analyze YouTube channel screenshots by fetching multiple images from external URLs and using Google Gemini AI to extract comprehensive channel information from all images combined.
+This API allows you to analyze YouTube channel screenshots by fetching multiple images from external URLs and using Google Gemini AI to extract comprehensive channel information from all images combined. It also supports manually adding channels without AI analysis.
 
 ## Base URL
 ```
@@ -61,7 +61,91 @@ curl -X POST http://localhost:3000/api/youtube/analyze \
   }'
 ```
 
-### 2. Check Analysis Status
+### 2. Manually Add YouTube Channel
+
+**POST** `/channels`
+
+Add a new YouTube channel manually without AI analysis. This is useful when you have the channel information and want to store it directly.
+
+**Request Body:**
+```json
+{
+  "channelName": "PewDiePie",
+  "subscriberCount": "111M",
+  "totalViews": "28.5B",
+  "estimatedRevenue": "$50K - $100K",
+  "watchTime": "2.5B hours",
+  "views48h": "500K",
+  "views60min": "10K",
+  "description": "Gaming and entertainment channel",
+  "category": "Gaming",
+  "joinDate": "Apr 29, 2010",
+  "location": "United States",
+  "socialLinks": {
+    "twitter": "https://twitter.com/pewdiepie",
+    "instagram": "https://instagram.com/pewdiepie"
+  },
+  "imageUrl": "https://example.com/channel-image.jpg",
+  "monetizationWarning": false,
+  "monetizationWarningReason": "",
+  "communityGuidelinesWarning": false,
+  "communityGuidelinesWarningReason": ""
+}
+```
+
+**Required Fields:**
+- `channelName` (string): Name of the YouTube channel
+
+**Optional Fields:**
+- All other fields are optional and can be added as needed
+
+**Response (201 Created):**
+```json
+{
+  "success": true,
+  "message": "YouTube channel added successfully",
+  "data": {
+    "id": "uuid-of-channel",
+    "channelName": "PewDiePie",
+    "subscriberCount": "111M",
+    "totalViews": "28.5B",
+    "estimatedRevenue": "$50K - $100K",
+    "watchTime": "2.5B hours",
+    "views48h": "500K",
+    "views60min": "10K",
+    "description": "Gaming and entertainment channel",
+    "category": "Gaming",
+    "joinDate": "Apr 29, 2010",
+    "location": "United States",
+    "socialLinks": {
+      "twitter": "https://twitter.com/pewdiepie",
+      "instagram": "https://instagram.com/pewdiepie"
+    },
+    "imageUrl": "https://example.com/channel-image.jpg",
+    "analysisStatus": "completed",
+    "monetizationWarning": false,
+    "communityGuidelinesWarning": false,
+    "analyzedBy": "user-uuid",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
+**Example with curl:**
+```bash
+curl -X POST http://localhost:3000/api/youtube/channels \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "channelName": "PewDiePie",
+    "subscriberCount": "111M",
+    "totalViews": "28.5B",
+    "category": "Gaming"
+  }'
+```
+
+### 3. Check Analysis Status
 
 **GET** `/status/:id`
 
@@ -83,7 +167,7 @@ Check the status of an ongoing analysis.
 }
 ```
 
-### 3. Get Analysis Results
+### 4. Get Analysis Results
 
 **GET** `/result/:id`
 
@@ -135,7 +219,7 @@ Get the completed analysis results. Only works when status is "completed".
 }
 ```
 
-### 4. Get All Channels
+### 5. Get All Channels
 
 **GET** `/channels?page=1&limit=10`
 
@@ -170,7 +254,7 @@ Get a paginated list of all analyzed channels.
 }
 ```
 
-### 5. Delete Channel
+### 6. Delete Channel
 
 **DELETE** `/channels/:id`
 
@@ -184,8 +268,9 @@ Delete a channel and its analysis data.
 }
 ```
 
-## Workflow Example
+## Workflow Examples
 
+### AI Analysis Workflow:
 1. **Start Analysis with Multiple Images:**
    ```bash
    curl -X POST http://localhost:3000/api/youtube/analyze \
@@ -199,14 +284,18 @@ Delete a channel and its analysis data.
      }'
    ```
 
-2. **Check Status:**
+### Manual Addition Workflow:
+1. **Add Channel Manually:**
    ```bash
-   curl -X GET http://localhost:3000/api/youtube/status/CHANNEL_ID
-   ```
-
-3. **Get Results (when completed):**
-   ```bash
-   curl -X GET http://localhost:3000/api/youtube/result/CHANNEL_ID
+   curl -X POST http://localhost:3000/api/youtube/channels \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -d '{
+       "channelName": "Example Channel",
+       "subscriberCount": "1M",
+       "totalViews": "10M",
+       "category": "Education"
+     }'
    ```
 
 ## Error Responses

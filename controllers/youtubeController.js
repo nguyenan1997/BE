@@ -446,6 +446,84 @@ const updateChannelWarnings = async (req, res, next) => {
   }
 };
 
+// Manually add YouTube channel without AI analysis
+const addChannelManually = async (req, res, next) => {
+  try {
+    const {
+      channelName,
+      subscriberCount,
+      totalViews,
+      estimatedRevenue,
+      watchTime,
+      views48h,
+      views60min,
+      description,
+      category,
+      joinDate,
+      location,
+      socialLinks,
+      imageUrl,
+      monetizationWarning,
+      monetizationWarningReason,
+      communityGuidelinesWarning,
+      communityGuidelinesWarningReason
+    } = req.body;
+
+    // Validate required fields
+    if (!channelName) {
+      return res.status(400).json({
+        success: false,
+        message: "Channel name is required"
+      });
+    }
+
+    // Create YouTube channel record
+    const youtubeChannel = await YouTubeChannel.create({
+      channelName,
+      subscriberCount,
+      totalViews,
+      estimatedRevenue,
+      watchTime,
+      views48h,
+      views60min,
+      description,
+      category,
+      joinDate,
+      location,
+      socialLinks,
+      imageUrl,
+      analysisStatus: "completed", // Manual entry is immediately completed
+      monetizationWarning: monetizationWarning || false,
+      monetizationWarningReason: monetizationWarningReason || null,
+      monetizationWarningDate: monetizationWarning ? new Date() : null,
+      communityGuidelinesWarning: communityGuidelinesWarning || false,
+      communityGuidelinesWarningReason: communityGuidelinesWarningReason || null,
+      communityGuidelinesWarningDate: communityGuidelinesWarning ? new Date() : null,
+      warnings: {
+        monetizationWarning: {
+          hasWarning: monetizationWarning || false,
+          reason: monetizationWarningReason || null,
+          date: monetizationWarning ? new Date() : null
+        },
+        communityGuidelinesWarning: {
+          hasWarning: communityGuidelinesWarning || false,
+          reason: communityGuidelinesWarningReason || null,
+          date: communityGuidelinesWarning ? new Date() : null
+        }
+      },
+      analyzedBy: req.user.userId
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "YouTube channel added successfully",
+      data: youtubeChannel
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   fetchAndAnalyze,
   getAnalysisStatus,
@@ -453,4 +531,5 @@ module.exports = {
   getAllChannels,
   deleteChannel,
   updateChannelWarnings,
+  addChannelManually,
 };
