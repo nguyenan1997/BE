@@ -4,7 +4,9 @@ const {
   register, 
   login, 
   getProfile, 
-  refreshToken 
+  refreshToken,
+  logout,
+  logoutAll
 } = require('../controllers/authController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 const { validateRegistration, validateLogin } = require('../validators/authValidator');
@@ -41,5 +43,7 @@ router.post('/register', authenticateToken, authorizeRoles(['admin']), validateR
 router.post('/login', validateLoginMiddleware, login);
 router.get('/profile', authenticateToken, getProfile);
 router.post('/refresh-token', authenticateToken, refreshToken);
+router.post('/logout', authenticateToken, logout);
+router.post('/logout-all', authenticateToken, logoutAll);
 
 module.exports = router; 

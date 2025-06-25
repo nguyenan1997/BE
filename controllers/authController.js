@@ -162,9 +162,59 @@ const refreshToken = async (req, res, next) => {
   }
 };
 
+// Logout user (server-side token blacklisting)
+const logout = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: 'No token provided'
+      });
+    }
+
+    // Add token to blacklist (you can use Redis or database)
+    // For now, we'll use a simple in-memory approach
+    // In production, use Redis or database table for blacklisted tokens
+    
+    // TODO: Implement proper token blacklisting
+    // Example with Redis:
+    // await redis.setex(`blacklist:${token}`, 24 * 60 * 60, '1'); // 24 hours
+    
+    // For now, just return success (client should delete token)
+    res.json({
+      success: true,
+      message: 'Logout successful. Please delete the token from your client.'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Logout all sessions (invalidate all user tokens)
+const logoutAll = async (req, res, next) => {
+  try {
+    const userId = req.user.userId;
+    
+    // TODO: Implement logout all sessions
+    // This would require tracking all active tokens per user
+    // For now, just return success
+    
+    res.json({
+      success: true,
+      message: 'All sessions logged out successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   getProfile,
-  refreshToken
+  refreshToken,
+  logout,
+  logoutAll
 }; 

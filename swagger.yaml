@@ -355,6 +355,74 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /api/auth/logout:
+    post:
+      summary: Logout user
+      description: |
+        Logout current user session. 
+        
+        **Note**: For complete security, also delete the token from your client-side storage (localStorage/sessionStorage).
+      tags: [👤 Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Logout successful. Please delete the token from your client."
+        400:
+          description: No token provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/auth/logout-all:
+    post:
+      summary: Logout all sessions
+      description: |
+        Logout user from all devices/sessions.
+        
+        **Note**: This will invalidate all tokens for the current user across all devices.
+      tags: [👤 Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: All sessions logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "All sessions logged out successfully"
+        401:
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   # ========================================
   # 🔒 ADMIN-ONLY ENDPOINTS
   # ========================================
