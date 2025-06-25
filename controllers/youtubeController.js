@@ -11,8 +11,10 @@ const fetchAndAnalyze = async (req, res, next) => {
   try {
     // Use default URLs if imageUrls is not provided in request body
     const imageUrls = req.body?.imageUrls || [
-      "http://10.31.0.66//green-box/screenshots/inspector_30_30109_1750751156.png",
-      "http://10.31.0.66//green-box/screenshots/inspector_30_30109_1750751156.png",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211431655178381/IMG_1229.png?ex=685c71a2&is=685b2022&hm=0aebb78950718a46d490265c19a24b7387cfab32ca4cc7eafbf00092ce731f4f&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211432456163459/IMG_1230.png?ex=685c71a3&is=685b2023&hm=b9693f18e705ddc339bc3f17e6ee9b5e9823e17a05e209727c0a38e0adfdf7c4&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211433118994462/IMG_1231.png?ex=685c71a3&is=685b2023&hm=fdf606cb630759faf65665758b4bb1eb7e4041ca9d54cb2283bd0e6ac9235856&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211433865318410/IMG_1232.png?ex=685c71a3&is=685b2023&hm=a9a887b1561d7dc73b0cc99f291ad227789a979de1856e8fcd0bd88a242aca23&=&format=webp&quality=lossless&width=250&height=543",
     ];
 
     // Validate input
@@ -37,9 +39,9 @@ const fetchAndAnalyze = async (req, res, next) => {
     const youtubeChannel = await YouTubeChannel.create({
       channelName: "Analyzing...",
       analysisStatus: "processing",
-      imageUrl: imageUrls.join("|"), // Store all URLs separated by |
+      imageUrl: imageUrls.join("|"),
       originalImageName: `${imageUrls.length}-images.jpg`,
-      analyzedBy: req.user.userId, // Lưu ID của user đang tạo
+      analyzedBy: req.user.userId,
     });
 
     // Start AI analysis in background
@@ -304,7 +306,6 @@ const getAllChannels = async (req, res, next) => {
           channelName: channel.channelName,
           analysisStatus: channel.analysisStatus,
           imageUrl: channel.imageUrl,
-          // Thông tin cảnh báo
           monetizationWarning: channel.monetizationWarning,
           communityGuidelinesWarning: channel.communityGuidelinesWarning,
           warnings: channel.warnings,

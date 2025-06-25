@@ -65,7 +65,7 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
     allowNull: true
   },
   imageUrl: {
-    type: DataTypes.STRING(500),
+    type: DataTypes.TEXT,
     allowNull: true
   },
   originalImageName: {
@@ -80,7 +80,7 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  // Cảnh báo kiếm tiền
+  // warning monetization
   monetizationWarning: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
@@ -96,7 +96,7 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
     allowNull: true,
     comment: 'Ngày nhận cảnh báo kiếm tiền'
   },
-  // Cảnh báo vi phạm cộng đồng
+  // warning community guidelines
   communityGuidelinesWarning: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
@@ -112,7 +112,7 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
     allowNull: true,
     comment: 'Ngày nhận cảnh báo vi phạm cộng đồng'
   },
-  // Thông tin tổng hợp về cảnh báo
+  // warning summary
   warnings: {
     type: DataTypes.JSON,
     allowNull: true,
