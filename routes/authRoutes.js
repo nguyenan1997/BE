@@ -6,7 +6,7 @@ const {
   getProfile, 
   refreshToken 
 } = require('../controllers/authController');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 const { validateRegistration, validateLogin } = require('../validators/authValidator');
 
 // Create middleware functions that call validators correctly
@@ -36,7 +36,8 @@ const validateLoginMiddleware = (req, res, next) => {
   next();
 };
 
-router.post('/register', validateRegistrationMiddleware, register);
+// Only admins can register new users
+router.post('/register', authenticateToken, authorizeRoles(['admin']), validateRegistrationMiddleware, register);
 router.post('/login', validateLoginMiddleware, login);
 router.get('/profile', authenticateToken, getProfile);
 router.post('/refresh-token', authenticateToken, refreshToken);

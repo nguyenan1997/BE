@@ -171,9 +171,11 @@ paths:
   # ========================================
   /api/auth/register:
     post:
-      summary: Register new user
-      description: Create a new user account (default role: user)
-      tags: [👤 Authentication]
+      summary: Register new user (Admin Only)
+      description: Create a new user account (only admins can register new users)
+      tags: [🔒 Admin Only]
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -224,6 +226,18 @@ paths:
                         type: string
         400:
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        403:
+          description: Forbidden - Admin access required
           content:
             application/json:
               schema:
