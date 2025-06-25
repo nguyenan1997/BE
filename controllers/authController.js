@@ -11,7 +11,7 @@ const generateToken = (userId) => {
   );
 };
 
-// Register new user
+// Register new user (Admin Only)
 const register = async (req, res, next) => {
   try {
     // Data already validated by middleware
@@ -39,15 +39,20 @@ const register = async (req, res, next) => {
       fullName
     });
 
-    // Generate token
-    const token = generateToken(user.id);
-
+    // Don't return token on registration - user should login separately
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'User registered successfully. User can now login with their credentials.',
       data: {
-        user: user.toJSON(),
-        token
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+          isActive: user.isActive,
+          createdAt: user.createdAt
+        }
       }
     });
   } catch (error) {

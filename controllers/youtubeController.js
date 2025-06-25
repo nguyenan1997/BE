@@ -524,6 +524,201 @@ const addChannelManually = async (req, res, next) => {
   }
 };
 
+// Analyze YouTube channel from URL by fetching images from external API
+const analyzeChannelFromUrl = async (req, res, next) => {
+  try {
+    const { channelUrl } = req.body;
+
+    // Validate input
+    if (!channelUrl) {
+      return res.status(400).json({
+        success: false,
+        message: "Channel URL is required"
+      });
+    }
+
+    // Validate YouTube URL format
+    const youtubeUrlPattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/;
+    if (!youtubeUrlPattern.test(channelUrl)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid YouTube channel URL format"
+      });
+    }
+
+    // Create YouTube channel record with pending status
+    const youtubeChannel = await YouTubeChannel.create({
+      channelName: "Analyzing...",
+      analysisStatus: "processing",
+      imageUrl: channelUrl, // Store the original URL
+      originalImageName: "channel-url",
+      analyzedBy: req.user.userId,
+    });
+
+    // Start analysis in background
+    fetchChannelImagesAndAnalyze(channelUrl, youtubeChannel.id);
+
+    res.status(202).json({
+      success: true,
+      message: "Channel analysis started",
+      data: {
+        id: youtubeChannel.id,
+        status: "processing",
+        message: "Fetching channel images and starting AI analysis. Check status later.",
+        channelUrl: channelUrl,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Background function to fetch channel images from external API and analyze
+const fetchChannelImagesAndAnalyze = async (channelUrl, channelId) => {
+  try {
+    console.log(`🔗 Starting analysis for channel: ${channelUrl}`);
+
+    // Step 1: Call external API to get channel images and info
+    const externalApiResult = await fetchChannelDataFromExternalAPI(channelUrl);
+    
+    if (!externalApiResult.success) {
+      throw new Error(`External API error: ${externalApiResult.error}`);
+    }
+
+    const { images, channelInfo } = externalApiResult.data;
+
+    // Step 2: Fetch all images
+    const imageBuffers = [];
+    for (let i = 0; i < images.length; i++) {
+      try {
+        console.log(`📥 Fetching image ${i + 1}/${images.length}: ${images[i]}`);
+        const imageResponse = await axios.get(images[i], {
+          responseType: "arraybuffer",
+          timeout: 30000,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          },
+        });
+
+        const imageBuffer = Buffer.from(imageResponse.data);
+        imageBuffers.push(imageBuffer);
+        console.log(`✅ Image ${i + 1} fetched successfully, size: ${imageBuffer.length} bytes`);
+      } catch (error) {
+        console.error(`❌ Failed to fetch image ${i + 1}:`, error.message);
+        throw new Error(`Failed to fetch image ${i + 1}: ${error.message}`);
+      }
+    }
+
+    console.log(`✅ All ${imageBuffers.length} images fetched successfully`);
+
+    // Step 3: Analyze with Gemini AI
+    const analysisResult = await analyzeMultipleYouTubeImages(imageBuffers, images);
+
+    if (analysisResult.success) {
+      const analysisData = analysisResult.data;
+
+      // Step 4: Update channel with combined data (external API + AI analysis)
+      await YouTubeChannel.update(
+        {
+          channelName: channelInfo.channelName || analysisData.channelName || "Unknown",
+          subscriberCount: channelInfo.subscriberCount || analysisData.subscriberCount || null,
+          totalViews: channelInfo.totalViews || analysisData.totalViews || null,
+          estimatedRevenue: analysisData.estimatedRevenue || null,
+          watchTime: analysisData.watchTime || null,
+          views48h: analysisData.views48h || null,
+          views60min: analysisData.views60min || null,
+          recentVideos: analysisData.recentVideos || null,
+          description: channelInfo.description || analysisData.description || null,
+          category: channelInfo.category || analysisData.category || null,
+          joinDate: channelInfo.joinDate || analysisData.joinDate || null,
+          location: channelInfo.location || analysisData.location || null,
+          socialLinks: channelInfo.socialLinks || analysisData.socialLinks || null,
+          aiAnalysis: analysisData.aiAnalysis || null,
+          imageUrl: images.join("|"), // Store all image URLs
+          originalImageName: `${images.length}-channel-images.jpg`,
+          monetizationWarning: analysisData.warnings?.monetizationWarning?.hasWarning || false,
+          monetizationWarningReason: analysisData.warnings?.monetizationWarning?.reason || null,
+          monetizationWarningDate: analysisData.warnings?.monetizationWarning?.date || null,
+          communityGuidelinesWarning: analysisData.warnings?.communityGuidelinesWarning?.hasWarning || false,
+          communityGuidelinesWarningReason: analysisData.warnings?.communityGuidelinesWarning?.reason || null,
+          communityGuidelinesWarningDate: analysisData.warnings?.communityGuidelinesWarning?.date || null,
+          warnings: analysisData.warnings || null,
+          analysisStatus: "completed",
+        },
+        {
+          where: { id: channelId },
+        }
+      );
+
+      console.log(`✅ Channel analysis completed for ${channelId}`);
+    } else {
+      // Update with error status
+      await YouTubeChannel.update(
+        {
+          analysisStatus: "failed",
+          analysisError: analysisResult.error,
+        },
+        {
+          where: { id: channelId },
+        }
+      );
+
+      console.error(`❌ AI analysis failed for channel ${channelId}:`, analysisResult.error);
+    }
+  } catch (error) {
+    console.error("Channel URL Analysis Error:", error);
+
+    // Update with error status
+    await YouTubeChannel.update(
+      {
+        analysisStatus: "failed",
+        analysisError: error.message,
+      },
+      {
+        where: { id: channelId },
+      }
+    );
+  }
+};
+
+// Function to call external API for channel data
+const fetchChannelDataFromExternalAPI = async (channelUrl) => {
+  try {
+    // TODO: Replace with your actual external API endpoint
+    const externalApiUrl = process.env.EXTERNAL_CHANNEL_API_URL || 'https://api.example.com/youtube/channel';
+    
+    console.log(`🌐 Calling external API: ${externalApiUrl}`);
+    
+    const response = await axios.post(externalApiUrl, {
+      channelUrl: channelUrl
+    }, {
+      timeout: 60000, // 60 seconds timeout
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.EXTERNAL_API_KEY || ''}` // If needed
+      }
+    });
+
+    if (response.status === 200 && response.data.success) {
+      return {
+        success: true,
+        data: response.data.data
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.message || 'External API returned error'
+      };
+    }
+  } catch (error) {
+    console.error('External API Error:', error.message);
+    return {
+      success: false,
+      error: `External API call failed: ${error.message}`
+    };
+  }
+};
+
 module.exports = {
   fetchAndAnalyze,
   getAnalysisStatus,
@@ -532,4 +727,5 @@ module.exports = {
   deleteChannel,
   updateChannelWarnings,
   addChannelManually,
+  analyzeChannelFromUrl,
 };

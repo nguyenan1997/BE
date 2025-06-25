@@ -25,6 +25,15 @@ const addChannelSchema = Joi.object({
   communityGuidelinesWarningReason: Joi.string().optional().max(500)
 });
 
+// Validation schema for analyzing channel from URL
+const analyzeChannelUrlSchema = Joi.object({
+  channelUrl: Joi.string().required().uri().pattern(/^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+/).messages({
+    'string.empty': 'Channel URL is required',
+    'string.uri': 'Channel URL must be a valid URL',
+    'string.pattern.base': 'Channel URL must be a valid YouTube URL'
+  })
+});
+
 // Validation schema for updating channel warnings
 const updateWarningsSchema = Joi.object({
   monetizationWarning: Joi.boolean().required(),
@@ -36,6 +45,18 @@ const updateWarningsSchema = Joi.object({
 // Middleware to validate add channel request
 const validateAddChannel = (req, res, next) => {
   const { error } = addChannelSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message
+    });
+  }
+  next();
+};
+
+// Middleware to validate channel URL analysis request
+const validateChannelUrl = (req, res, next) => {
+  const { error } = analyzeChannelUrlSchema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
@@ -59,5 +80,6 @@ const validateUpdateWarnings = (req, res, next) => {
 
 module.exports = {
   validateAddChannel,
+  validateChannelUrl,
   validateUpdateWarnings
 }; 

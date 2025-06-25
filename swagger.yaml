@@ -216,14 +216,12 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "User registered successfully"
+                    example: "User registered successfully. User can now login with their credentials."
                   data:
                     type: object
                     properties:
                       user:
                         $ref: '#/components/schemas/User'
-                      token:
-                        type: string
         400:
           description: Validation error
           content:
@@ -737,24 +735,28 @@ paths:
   # ========================================
   /api/youtube/analyze:
     post:
-      summary: Analyze YouTube channel from images
-      description: Start AI analysis of YouTube channel from image URLs
+      summary: Analyze YouTube channel from image URLs
+      description: Start AI analysis of YouTube channel from image URLs (not file upload)
       tags: [👤 YouTube Analysis]
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                images:
+                imageUrls:
                   type: array
                   items:
                     type: string
-                    format: binary
-                  description: Image files to analyze
+                    format: uri
+                  description: Array of image URLs to analyze
+                  example:
+                    - "https://example.com/youtube-channel-main.jpg"
+                    - "https://example.com/youtube-channel-stats.jpg"
+                    - "https://example.com/youtube-channel-videos.jpg"
       responses:
         202:
           description: Analysis started successfully
@@ -768,7 +770,7 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "Images uploaded and analysis started"
+                    example: "Images fetched and analysis started"
                   data:
                     type: object
                     properties:
@@ -789,6 +791,73 @@ paths:
                           type: string
         400:
           description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/youtube/analyze-url:
+    post:
+      summary: Analyze YouTube channel from URL
+      description: |
+        Analyze YouTube channel by providing channel URL. The system will:
+        1. Call external API to fetch channel images and basic info
+        2. Download images from external API
+        3. Use Gemini AI to analyze the images
+        4. Combine external API data with AI analysis results
+      tags: [👤 YouTube Analysis]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [channelUrl]
+              properties:
+                channelUrl:
+                  type: string
+                  format: uri
+                  description: YouTube channel URL (e.g., https://www.youtube.com/@channelname)
+                  example: "https://www.youtube.com/@PewDiePie"
+      responses:
+        202:
+          description: Channel analysis started successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Channel analysis started"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      status:
+                        type: string
+                        example: "processing"
+                      message:
+                        type: string
+                        example: "Fetching channel images and starting AI analysis. Check status later."
+                      channelUrl:
+                        type: string
+                        example: "https://www.youtube.com/@PewDiePie"
+        400:
+          description: Invalid YouTube URL
           content:
             application/json:
               schema:

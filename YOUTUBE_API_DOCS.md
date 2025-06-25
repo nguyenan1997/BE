@@ -1,7 +1,10 @@
 # YouTube Channel Analysis API Documentation
 
 ## Overview
-This API allows you to analyze YouTube channel screenshots by fetching multiple images from external URLs and using Google Gemini AI to extract comprehensive channel information from all images combined. It also supports manually adding channels without AI analysis.
+This API allows you to analyze YouTube channel screenshots using Google Gemini AI. It supports multiple analysis methods:
+1. **Manual Image Upload**: Upload images directly for AI analysis
+2. **Manual Channel Entry**: Add channel data manually without AI
+3. **URL-based Analysis**: Provide channel URL, system fetches images from external API and analyzes with AI
 
 ## Base URL
 ```
@@ -10,7 +13,56 @@ http://localhost:3000/api/youtube
 
 ## Endpoints
 
-### 1. Fetch and Analyze Multiple YouTube Channel Images
+### 1. Analyze YouTube Channel from URL (Recommended)
+
+**POST** `/analyze-url`
+
+**New Feature**: Analyze YouTube channel by providing just the channel URL. The system automatically:
+1. Calls external API to fetch channel images and basic information
+2. Downloads images from the external API
+3. Uses Gemini AI to analyze the images
+4. Combines external API data with AI analysis results
+
+**Request Body:**
+```json
+{
+  "channelUrl": "https://www.youtube.com/@PewDiePie"
+}
+```
+
+**Response (202 Accepted):**
+```json
+{
+  "success": true,
+  "message": "Channel analysis started",
+  "data": {
+    "id": "uuid-of-channel",
+    "status": "processing",
+    "message": "Fetching channel images and starting AI analysis. Check status later.",
+    "channelUrl": "https://www.youtube.com/@PewDiePie"
+  }
+}
+```
+
+**Example with curl:**
+```bash
+curl -X POST http://localhost:3000/api/youtube/analyze-url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "channelUrl": "https://www.youtube.com/@PewDiePie"
+  }'
+```
+
+**Supported URL Formats:**
+- `https://www.youtube.com/@channelname`
+- `https://youtube.com/@channelname`
+- `https://www.youtube.com/channel/CHANNEL_ID`
+- `https://youtu.be/CHANNEL_ID`
+
+**Note**: Frontend chỉ cần gửi `channelUrl`. Backend sẽ tự động gọi external API để lấy ảnh và thông tin channel.
+
+### 2. Fetch and Analyze Multiple YouTube Channel Images
 
 **POST** `/analyze`
 
@@ -52,6 +104,7 @@ Fetches multiple images from external URLs and analyzes them together with Gemin
 ```bash
 curl -X POST http://localhost:3000/api/youtube/analyze \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "imageUrls": [
       "https://example.com/youtube-channel-main.jpg",
@@ -61,7 +114,7 @@ curl -X POST http://localhost:3000/api/youtube/analyze \
   }'
 ```
 
-### 2. Manually Add YouTube Channel
+### 3. Manually Add YouTube Channel
 
 **POST** `/channels`
 
@@ -145,7 +198,7 @@ curl -X POST http://localhost:3000/api/youtube/channels \
   }'
 ```
 
-### 3. Check Analysis Status
+### 4. Check Analysis Status
 
 **GET** `/status/:id`
 
@@ -167,7 +220,7 @@ Check the status of an ongoing analysis.
 }
 ```
 
-### 4. Get Analysis Results
+### 5. Get Analysis Results
 
 **GET** `/result/:id`
 
@@ -219,7 +272,7 @@ Get the completed analysis results. Only works when status is "completed".
 }
 ```
 
-### 5. Get All Channels
+### 6. Get All Channels
 
 **GET** `/channels?page=1&limit=10`
 
@@ -254,7 +307,7 @@ Get a paginated list of all analyzed channels.
 }
 ```
 
-### 6. Delete Channel
+### 7. Delete Channel
 
 **DELETE** `/channels/:id`
 
@@ -270,11 +323,35 @@ Delete a channel and its analysis data.
 
 ## Workflow Examples
 
+### URL-based Analysis Workflow (Recommended):
+1. **Start Analysis with Channel URL:**
+   ```bash
+   curl -X POST http://localhost:3000/api/youtube/analyze-url \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     -d '{
+       "channelUrl": "https://www.youtube.com/@PewDiePie"
+     }'
+   ```
+
+2. **Check Status:**
+   ```bash
+   curl -X GET http://localhost:3000/api/youtube/status/CHANNEL_ID \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN"
+   ```
+
+3. **Get Results (when completed):**
+   ```bash
+   curl -X GET http://localhost:3000/api/youtube/result/CHANNEL_ID \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN"
+   ```
+
 ### AI Analysis Workflow:
 1. **Start Analysis with Multiple Images:**
    ```bash
    curl -X POST http://localhost:3000/api/youtube/analyze \
      -H "Content-Type: application/json" \
+     -H "Authorization: Bearer YOUR_JWT_TOKEN" \
      -d '{
        "imageUrls": [
          "https://example.com/channel-main.jpg",
@@ -298,13 +375,56 @@ Delete a channel and its analysis data.
      }'
    ```
 
+## External API Configuration (Backend Setup)
+
+The URL-based analysis requires an external API that can:
+1. Accept a YouTube channel URL
+2. Return channel images and basic information
+3. Provide structured data
+
+**Note**: Đây là cấu hình backend. Frontend chỉ cần gửi `channelUrl`, backend sẽ tự động gọi external API.
+
+### Environment Variables (Backend):
+```env
+# External Channel API Configuration
+EXTERNAL_CHANNEL_API_URL=https://api.example.com/youtube/channel
+EXTERNAL_API_KEY=your_external_api_key_here
+```
+
+### Expected External API Response:
+```json
+{
+  "success": true,
+  "data": {
+    "images": [
+      "https://example.com/channel-main.jpg",
+      "https://example.com/channel-stats.jpg",
+      "https://example.com/channel-videos.jpg"
+    ],
+    "channelInfo": {
+      "channelName": "PewDiePie",
+      "subscriberCount": "111M",
+      "totalViews": "28.5B",
+      "description": "Gaming and entertainment channel",
+      "category": "Gaming",
+      "joinDate": "Apr 29, 2010",
+      "location": "United States",
+      "socialLinks": {
+        "twitter": "https://twitter.com/pewdiepie",
+        "instagram": "https://instagram.com/pewdiepie"
+      }
+    }
+  }
+}
+```
+
 ## Error Responses
 
 **400 Bad Request:**
 ```json
 {
   "success": false,
-  "message": "imageUrls array is required with at least one URL"
+  "message": "Channel URL is required"
 }
 ```
 
@@ -326,27 +446,27 @@ Delete a channel and its analysis data.
 
 ## Notes
 
+- **URL-based analysis** is the recommended approach for ease of use
 - The analysis is performed asynchronously in the background
 - Multiple images are analyzed together to provide comprehensive information
-- Each image can contain different aspects of the channel (main page, stats, videos, about, etc.)
 - Image URLs must be publicly accessible
 - Supported image formats: JPEG, PNG, GIF, WebP
 - Maximum image size: 10MB per image
 - Analysis typically takes 15-45 seconds depending on number of images and complexity
 - The API includes proper error handling for network issues and AI analysis failures
-- No authentication required for YouTube analysis endpoints
+- All endpoints require JWT authentication
 
-## 📊 Dữ liệu được Phân tích
+## 📊 Data Analysis
 
-### Thông tin Cơ bản:
-- **channelName**: Tên kênh
-- **subscriberCount**: Số lượng subscribers
-- **videoCount**: Số lượng videos
-- **totalViews**: Tổng lượt xem
-- **description**: Mô tả kênh
-- **category**: Danh mục
-- **joinDate**: Ngày tham gia
-- **location**: Vị trí
+### Basic Information:
+- **channelName**: Channel name
+- **subscriberCount**: Number of subscribers
+- **videoCount**: Number of videos
+- **totalViews**: Total views
+- **description**: Channel description
+- **category**: Category
+- **joinDate**: Join date
+- **location**: Location
 
 ### Social Links:
 - Website
@@ -355,42 +475,49 @@ Delete a channel and its analysis data.
 - Facebook
 
 ### AI Analysis:
-- **channelType**: Loại nội dung
-- **targetAudience**: Đối tượng mục tiêu
-- **contentQuality**: Chất lượng nội dung
-- **engagementLevel**: Mức độ tương tác
-- **monetizationPotential**: Tiềm năng kiếm tiền
-- **growthTrend**: Xu hướng tăng trưởng
+- **channelType**: Content type
+- **targetAudience**: Target audience
+- **contentQuality**: Content quality
+- **engagementLevel**: Engagement level
+- **monetizationPotential**: Monetization potential
+- **growthTrend**: Growth trend
 
-## ⚠️ Lưu ý
+## ⚠️ Notes
 
-1. **File Size**: Giới hạn 10MB cho mỗi ảnh
-2. **File Types**: Chỉ chấp nhận jpeg, jpg, png, gif, webp
-3. **Processing Time**: Phân tích AI có thể mất 10-30 giây
+1. **File Size**: 10MB limit per image
+2. **File Types**: Only jpeg, jpg, png, gif, webp accepted
+3. **Processing Time**: AI analysis may take 10-30 seconds
 4. **Rate Limiting**: 100 requests per 15 minutes per IP
-5. **Authentication**: Tất cả endpoints đều yêu cầu JWT token
+5. **Authentication**: All endpoints require JWT token
 
 ## 🛠️ Setup
 
-1. **Cài đặt dependencies:**
+1. **Install dependencies:**
    ```bash
    npm install multer @google/generative-ai
    ```
 
-2. **Cấu hình Gemini API Key:**
+2. **Configure Gemini API Key:**
    ```env
    GEMINI_API_KEY=your_actual_gemini_api_key
    ```
 
-3. **Khởi động server:**
+3. **Configure External API:**
+   ```env
+   EXTERNAL_CHANNEL_API_URL=your_external_api_url
+   EXTERNAL_API_KEY=your_external_api_key
+   ```
+
+4. **Start server:**
    ```bash
    npm run dev
    ```
 
-4. **Test API:**
+5. **Test API:**
    ```bash
-   # Upload ảnh
-   curl -X POST http://localhost:3000/api/youtube/upload \
+   # URL-based analysis
+   curl -X POST http://localhost:3000/api/youtube/analyze-url \
      -H "Authorization: Bearer YOUR_TOKEN" \
-     -F "image=@test_image.jpg"
+     -H "Content-Type: application/json" \
+     -d '{"channelUrl": "https://www.youtube.com/@PewDiePie"}'
    ``` 
