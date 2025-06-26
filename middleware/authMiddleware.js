@@ -19,7 +19,7 @@ const authenticateToken = async (req, res, next) => {
     let originalToken = token;
 
     // Check if this is a hashed token
-    const tokenData = getToken(token);
+    const tokenData = await getToken(token);
     if (tokenData) {
       // This is a hashed token, use the original token
       originalToken = tokenData.originalToken;

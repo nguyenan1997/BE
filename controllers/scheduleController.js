@@ -1,17 +1,16 @@
-const { Schedule, YouTubeChannel, User } = require('../models');
+const { Schedule, YouTubeChannel } = require('../models');
 const cron = require('node-cron');
-const { Op } = require('sequelize');
 
-// Lưu trữ các job cron đang chạy
+// Save all active jobs
 const activeJobs = new Map();
 
-// Tạo lịch mới
+// Create a new schedule
 const createSchedule = async (req, res) => {
   try {
     const { channelId, name, description, cronExpression, maxRuns, settings } = req.body;
     const userId = req.user.id;
 
-    // Kiểm tra channel có tồn tại và thuộc về user không
+    // Check if channel exists and belongs to user
     const channel = await YouTubeChannel.findOne({
       where: { id: channelId, analyzedBy: userId }
     });
@@ -19,7 +18,7 @@ const createSchedule = async (req, res) => {
     if (!channel) {
       return res.status(404).json({
         success: false,
-        message: 'Kênh YouTube không tồn tại hoặc không thuộc về bạn'
+        message: 'YouTube channel does not exist or does not belong to you'
       });
     }
 
@@ -27,11 +26,11 @@ const createSchedule = async (req, res) => {
     if (!cron.validate(cronExpression)) {
       return res.status(400).json({
         success: false,
-        message: 'Biểu thức cron không hợp lệ'
+        message: 'Invalid cron expression'
       });
     }
 
-    // Tính toán thời gian chạy tiếp theo
+    // Calculate next run time
     const nextRunAt = cron.getNextDate(cronExpression);
 
     const schedule = await Schedule.create({
@@ -45,14 +44,14 @@ const createSchedule = async (req, res) => {
       nextRunAt
     });
 
-    // Tạo job cron nếu lịch đang active
+    // Create cron job if schedule is active
     if (schedule.isActive) {
       createCronJob(schedule);
     }
 
     res.status(201).json({
       success: true,
-      message: 'Tạo lịch thành công',
+      message: 'Schedule created successfully',
       data: schedule
     });
 
@@ -60,13 +59,13 @@ const createSchedule = async (req, res) => {
     console.error('Error creating schedule:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// Lấy danh sách lịch của user
+// Get user schedules
 const getUserSchedules = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -108,13 +107,13 @@ const getUserSchedules = async (req, res) => {
     console.error('Error getting user schedules:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// Cập nhật lịch
+// Update schedule
 const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -128,31 +127,31 @@ const updateSchedule = async (req, res) => {
     if (!schedule) {
       return res.status(404).json({
         success: false,
-        message: 'Lịch không tồn tại'
+        message: 'Schedule does not exist'
       });
     }
 
-    // Validate cron expression nếu có cập nhật
+    // Validate cron expression if updated
     if (updateData.cronExpression && !cron.validate(updateData.cronExpression)) {
       return res.status(400).json({
         success: false,
-        message: 'Biểu thức cron không hợp lệ'
+        message: 'Invalid cron expression'
       });
     }
 
-    // Cập nhật thời gian chạy tiếp theo nếu cron expression thay đổi
+    // Update next run time if cron expression changes
     if (updateData.cronExpression) {
       updateData.nextRunAt = cron.getNextDate(updateData.cronExpression);
     }
 
     await schedule.update(updateData);
 
-    // Cập nhật job cron
+    // Update cron job
     updateCronJob(schedule);
 
     res.json({
       success: true,
-      message: 'Cập nhật lịch thành công',
+      message: 'Schedule updated successfully',
       data: schedule
     });
 
@@ -160,13 +159,13 @@ const updateSchedule = async (req, res) => {
     console.error('Error updating schedule:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// Xóa lịch
+// Delete schedule
 const deleteSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -179,31 +178,31 @@ const deleteSchedule = async (req, res) => {
     if (!schedule) {
       return res.status(404).json({
         success: false,
-        message: 'Lịch không tồn tại'
+        message: 'Schedule does not exist'
       });
     }
 
-    // Dừng job cron nếu đang chạy
+    // Stop cron job if running
     stopCronJob(schedule.id);
 
     await schedule.destroy();
 
     res.json({
       success: true,
-      message: 'Xóa lịch thành công'
+      message: 'Schedule deleted successfully'
     });
 
   } catch (error) {
     console.error('Error deleting schedule:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// Bật/tắt lịch
+// Toggle schedule
 const toggleSchedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -216,7 +215,7 @@ const toggleSchedule = async (req, res) => {
     if (!schedule) {
       return res.status(404).json({
         success: false,
-        message: 'Lịch không tồn tại'
+        message: 'Schedule does not exist'
       });
     }
 
@@ -231,7 +230,7 @@ const toggleSchedule = async (req, res) => {
 
     res.json({
       success: true,
-      message: `Đã ${schedule.isActive ? 'bật' : 'tắt'} lịch`,
+      message: `Schedule ${schedule.isActive ? 'enabled' : 'disabled'}`,
       data: schedule
     });
 
@@ -239,13 +238,13 @@ const toggleSchedule = async (req, res) => {
     console.error('Error toggling schedule:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// Chạy lịch ngay lập tức
+// Run schedule immediately
 const runScheduleNow = async (req, res) => {
   try {
     const { id } = req.params;
@@ -264,31 +263,31 @@ const runScheduleNow = async (req, res) => {
     if (!schedule) {
       return res.status(404).json({
         success: false,
-        message: 'Lịch không tồn tại'
+        message: 'Schedule does not exist'
       });
     }
 
-    // Chạy phân tích ngay lập tức
+    // Run analysis immediately
     await executeSchedule(schedule);
 
     res.json({
       success: true,
-      message: 'Đã chạy lịch thành công'
+      message: 'Schedule run successfully'
     });
 
   } catch (error) {
     console.error('Error running schedule:', error);
     res.status(500).json({
       success: false,
-      message: 'Lỗi server',
+      message: 'Server error',
       error: error.message
     });
   }
 };
 
-// Tạo job cron cho lịch
+// Create cron job for schedule
 const createCronJob = (schedule) => {
-  // Dừng job cũ nếu có
+  // Stop old job if exists
   stopCronJob(schedule.id);
 
   const job = cron.schedule(schedule.cronExpression, async () => {
@@ -305,7 +304,7 @@ const createCronJob = (schedule) => {
   job.start();
 };
 
-// Cập nhật job cron
+// Update cron job
 const updateCronJob = (schedule) => {
   if (schedule.isActive) {
     createCronJob(schedule);
@@ -314,7 +313,7 @@ const updateCronJob = (schedule) => {
   }
 };
 
-// Dừng job cron
+// Stop cron job
 const stopCronJob = (scheduleId) => {
   const job = activeJobs.get(scheduleId);
   if (job) {
@@ -323,26 +322,26 @@ const stopCronJob = (scheduleId) => {
   }
 };
 
-// Thực thi lịch
+// Execute schedule
 const executeSchedule = async (schedule) => {
   try {
-    // Kiểm tra số lần chạy tối đa
+    // Check maximum runs
     if (schedule.maxRuns && schedule.runCount >= schedule.maxRuns) {
       await schedule.update({ isActive: false });
       stopCronJob(schedule.id);
       return;
     }
 
-    // Import controller để chạy phân tích
+    // Import controller to run analysis
     const { fetchAndAnalyze } = require('./youtubeController');
     
-    // Tạo mock request object
+    // Create mock request object
     const mockReq = {
       user: { id: schedule.userId },
       body: { channelId: schedule.channelId }
     };
 
-    // Tạo mock response object
+    // Create mock response object
     const mockRes = {
       status: (code) => ({
         json: (data) => {
@@ -351,10 +350,10 @@ const executeSchedule = async (schedule) => {
       })
     };
 
-    // Chạy phân tích
+    // Run analysis
     await fetchAndAnalyze(mockReq, mockRes);
 
-    // Cập nhật thông tin lịch
+    // Update schedule information
     await schedule.update({
       lastRunAt: new Date(),
       runCount: schedule.runCount + 1,
@@ -364,7 +363,7 @@ const executeSchedule = async (schedule) => {
   } catch (error) {
     console.error(`Error executing schedule ${schedule.id}:`, error);
     
-    // Cập nhật thông tin lỗi
+    // Update schedule information
     await schedule.update({
       lastRunAt: new Date(),
       runCount: schedule.runCount + 1
@@ -372,7 +371,7 @@ const executeSchedule = async (schedule) => {
   }
 };
 
-// Khởi tạo các job cron khi server start
+// Initialize cron jobs when server starts
 const initializeSchedules = async () => {
   try {
     const activeSchedules = await Schedule.findAll({

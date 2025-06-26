@@ -112,7 +112,7 @@ const login = async (req, res, next) => {
     const hashedToken = hashToken(originalToken);
     
     // Store original token
-    addToken(hashedToken, {
+    await addToken(hashedToken, {
       originalToken,
       userId: user.id
     });
@@ -175,11 +175,11 @@ const refreshToken = async (req, res, next) => {
     // Remove old token from store
     const oldToken = req.headers.authorization?.replace('Bearer ', '');
     if (oldToken) {
-      removeToken(oldToken);
+      await removeToken(oldToken);
     }
     
     // Store new token
-    addToken(newHashedToken, {
+    await addToken(newHashedToken, {
       originalToken: newOriginalToken,
       userId: user.id
     });
@@ -201,53 +201,29 @@ const logout = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
-    if (!token) {
-      return res.status(400).json({
-        success: false,
-        message: 'No token provided'
-      });
+    if (token) {
+      // Remove token from store
+      await removeToken(token);
     }
 
-    // Remove token from store
-    const tokenData = getToken(token);
-    if (tokenData) {
-      // This is a hashed token, remove it from store
-      removeToken(token);
-    }
-
-    // TODO: Add token to blacklist (you can use Redis or database)
-    // For now, we'll use a simple in-memory approach
-    // In production, use Redis or database table for blacklisted tokens
-    
-    // TODO: Implement proper token blacklisting
-    // Example with Redis:
-    // await redis.setex(`blacklist:${token}`, 24 * 60 * 60, '1'); // 24 hours
-    
-    // For now, just return success (client should delete token)
     res.json({
       success: true,
-      message: 'Logout successful. Please delete the token from your client.'
+      message: 'Logged out successfully'
     });
   } catch (error) {
     next(error);
   }
 };
 
-// Logout all sessions (invalidate all user tokens)
+// Logout from all devices
 const logoutAll = async (req, res, next) => {
   try {
-    const userId = req.user.userId;
-    
-    // Remove all tokens for this user from store
-    removeUserTokens(userId);
-    
-    // TODO: Implement logout all sessions
-    // This would require tracking all active tokens per user
-    // For now, just return success
-    
+    // Remove all tokens for this user
+    await removeUserTokens(req.user.userId);
+
     res.json({
       success: true,
-      message: 'All sessions logged out successfully'
+      message: 'Logged out from all devices successfully'
     });
   } catch (error) {
     next(error);
