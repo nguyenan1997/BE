@@ -3,13 +3,13 @@ const { Schedule } = require('../models');
 
 async function createScheduleTable() {
   try {
-    console.log('🔄 Đang tạo bảng schedules...');
+    console.log('🔄 Creating schedules table...');
     
     // Sync model Schedule
     await Schedule.sync({ force: true });
     
-    console.log('✅ Bảng schedules đã được tạo thành công!');
-    console.log('📋 Cấu trúc bảng:');
+    console.log('✅ Table schedules created successfully!');
+    console.log('📋 Table structure:');
     console.log('   - id: UUID (Primary Key)');
     console.log('   - userId: UUID (Foreign Key -> users.id)');
     console.log('   - channelId: UUID (Foreign Key -> youtube_channels.id)');
@@ -31,11 +31,11 @@ async function createScheduleTable() {
     console.log('   - isActive');
     console.log('   - nextRunAt');
     
-    console.log('\n🎯 Bạn có thể bắt đầu sử dụng API đặt lịch!');
-    console.log('📚 Xem documentation tại: SCHEDULE_API_DOCS.md');
+    console.log('\n🎯 You can start using the schedule API!');
+    console.log('📚 See documentation at: SCHEDULE_API_DOCS.md');
     
   } catch (error) {
-    console.error('❌ Lỗi khi tạo bảng schedules:', error);
+    console.error('❌ Error creating schedules table:', error);
   } finally {
     await sequelize.close();
   }

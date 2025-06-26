@@ -1,61 +1,15 @@
 const Joi = require('joi');
 const cron = require('node-cron');
 
-// Validator cho tạo lịch mới
-const validateCreateSchedule = (req, res, next) => {
-  const schema = Joi.object({
-    channelId: Joi.string().uuid().required().messages({
-      'string.uuid': 'ID kênh phải là UUID hợp lệ',
-      'any.required': 'ID kênh là bắt buộc'
-    }),
-    name: Joi.string().min(1).max(200).required().messages({
-      'string.min': 'Tên lịch phải có ít nhất 1 ký tự',
-      'string.max': 'Tên lịch không được quá 200 ký tự',
-      'any.required': 'Tên lịch là bắt buộc'
-    }),
-    description: Joi.string().max(1000).optional().messages({
-      'string.max': 'Mô tả không được quá 1000 ký tự'
-    }),
-    cronExpression: Joi.string().custom((value, helpers) => {
-      if (!cron.validate(value)) {
-        return helpers.error('any.invalid');
-      }
-      return value;
-    }).required().messages({
-      'any.invalid': 'Biểu thức cron không hợp lệ',
-      'any.required': 'Biểu thức cron là bắt buộc'
-    }),
-    maxRuns: Joi.number().integer().min(1).max(1000).optional().messages({
-      'number.integer': 'Số lần chạy tối đa phải là số nguyên',
-      'number.min': 'Số lần chạy tối đa phải lớn hơn 0',
-      'number.max': 'Số lần chạy tối đa không được quá 1000'
-    }),
-    settings: Joi.object().optional().messages({
-      'object.base': 'Cài đặt phải là object'
-    })
-  });
-
-  const { error } = schema.validate(req.body);
-  if (error) {
-    return res.status(400).json({
-      success: false,
-      message: 'Dữ liệu không hợp lệ',
-      errors: error.details.map(detail => detail.message)
-    });
-  }
-
-  next();
-};
-
-// Validator cho cập nhật lịch
+// Validator for updating schedule
 const validateUpdateSchedule = (req, res, next) => {
   const schema = Joi.object({
     name: Joi.string().min(1).max(200).optional().messages({
-      'string.min': 'Tên lịch phải có ít nhất 1 ký tự',
-      'string.max': 'Tên lịch không được quá 200 ký tự'
+      'string.min': 'Schedule name must have at least 1 character',
+      'string.max': 'Schedule name cannot exceed 200 characters'
     }),
     description: Joi.string().max(1000).optional().messages({
-      'string.max': 'Mô tả không được quá 1000 ký tự'
+      'string.max': 'Description cannot exceed 1000 characters'
     }),
     cronExpression: Joi.string().custom((value, helpers) => {
       if (!cron.validate(value)) {
@@ -63,18 +17,18 @@ const validateUpdateSchedule = (req, res, next) => {
       }
       return value;
     }).optional().messages({
-      'any.invalid': 'Biểu thức cron không hợp lệ'
+      'any.invalid': 'Invalid cron expression'
     }),
     maxRuns: Joi.number().integer().min(1).max(1000).optional().messages({
-      'number.integer': 'Số lần chạy tối đa phải là số nguyên',
-      'number.min': 'Số lần chạy tối đa phải lớn hơn 0',
-      'number.max': 'Số lần chạy tối đa không được quá 1000'
+      'number.integer': 'Maximum runs must be an integer',
+      'number.min': 'Maximum runs must be greater than 0',
+      'number.max': 'Maximum runs cannot exceed 1000'
     }),
     isActive: Joi.boolean().optional().messages({
-      'boolean.base': 'Trạng thái hoạt động phải là boolean'
+      'boolean.base': 'Active status must be boolean'
     }),
     settings: Joi.object().optional().messages({
-      'object.base': 'Cài đặt phải là object'
+      'object.base': 'Settings must be an object'
     })
   });
 
@@ -82,7 +36,7 @@ const validateUpdateSchedule = (req, res, next) => {
   if (error) {
     return res.status(400).json({
       success: false,
-      message: 'Dữ liệu không hợp lệ',
+      message: 'Invalid data',
       errors: error.details.map(detail => detail.message)
     });
   }
@@ -90,20 +44,20 @@ const validateUpdateSchedule = (req, res, next) => {
   next();
 };
 
-// Validator cho query parameters
+// Validator for query parameters
 const validateScheduleQuery = (req, res, next) => {
   const schema = Joi.object({
     page: Joi.number().integer().min(1).optional().messages({
-      'number.integer': 'Trang phải là số nguyên',
-      'number.min': 'Trang phải lớn hơn 0'
+      'number.integer': 'Page must be an integer',
+      'number.min': 'Page must be greater than 0'
     }),
     limit: Joi.number().integer().min(1).max(100).optional().messages({
-      'number.integer': 'Giới hạn phải là số nguyên',
-      'number.min': 'Giới hạn phải lớn hơn 0',
-      'number.max': 'Giới hạn không được quá 100'
+      'number.integer': 'Limit must be an integer',
+      'number.min': 'Limit must be greater than 0',
+      'number.max': 'Limit cannot exceed 100'
     }),
     status: Joi.string().valid('active', 'inactive').optional().messages({
-      'any.only': 'Trạng thái phải là active hoặc inactive'
+      'any.only': 'Status must be active or inactive'
     })
   });
 
@@ -111,7 +65,7 @@ const validateScheduleQuery = (req, res, next) => {
   if (error) {
     return res.status(400).json({
       success: false,
-      message: 'Tham số query không hợp lệ',
+      message: 'Invalid query parameters',
       errors: error.details.map(detail => detail.message)
     });
   }
@@ -119,84 +73,139 @@ const validateScheduleQuery = (req, res, next) => {
   next();
 };
 
-// Helper function để tạo cron expression từ các tham số
-const createCronExpression = (frequency, time, dayOfWeek = null, dayOfMonth = null) => {
-  switch (frequency) {
+// Helper function to create cron expression from specific time information
+const createCronExpressionFromTime = (scheduleType, timeData) => {
+  switch (scheduleType) {
     case 'minutely':
       return `* * * * *`;
+    
     case 'hourly':
       return `0 * * * *`;
+    
     case 'daily':
-      const [hour, minute] = time.split(':');
+      const { hour, minute } = timeData;
       return `${minute} ${hour} * * *`;
+    
     case 'weekly':
-      const [weekHour, weekMinute] = time.split(':');
+      const { hour: weekHour, minute: weekMinute, dayOfWeek } = timeData;
       return `${weekMinute} ${weekHour} * * ${dayOfWeek}`;
+    
     case 'monthly':
-      const [monthHour, monthMinute] = time.split(':');
+      const { hour: monthHour, minute: monthMinute, dayOfMonth } = timeData;
       return `${monthMinute} ${monthHour} ${dayOfMonth} * *`;
+    
+    case 'yearly':
+      const { hour: yearHour, minute: yearMinute, dayOfMonth: yearDay, month } = timeData;
+      return `${yearMinute} ${yearHour} ${yearDay} ${month} *`;
+    
     default:
-      throw new Error('Tần suất không hợp lệ');
+      throw new Error('Invalid schedule type');
   }
 };
 
-// Validator cho tạo cron expression từ form
-const validateCronForm = (req, res, next) => {
+// Validator for creating schedule from specific time information
+const validateScheduleTime = (req, res, next) => {
   const schema = Joi.object({
-    frequency: Joi.string().valid('minutely', 'hourly', 'daily', 'weekly', 'monthly').required().messages({
-      'any.only': 'Tần suất phải là minutely, hourly, daily, weekly hoặc monthly',
-      'any.required': 'Tần suất là bắt buộc'
+    channelId: Joi.string().uuid().required().messages({
+      'string.uuid': 'Channel ID must be a valid UUID',
+      'any.required': 'Channel ID is required'
     }),
-    time: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).when('frequency', {
-      is: Joi.string().valid('minutely', 'hourly'),
-      then: Joi.optional(),
-      otherwise: Joi.required()
-    }).messages({
-      'string.pattern.base': 'Thời gian phải có định dạng HH:MM',
-      'any.required': 'Thời gian là bắt buộc cho tần suất này'
+    name: Joi.string().min(1).max(200).required().messages({
+      'string.min': 'Schedule name must have at least 1 character',
+      'string.max': 'Schedule name cannot exceed 200 characters',
+      'any.required': 'Schedule name is required'
     }),
-    dayOfWeek: Joi.number().min(0).max(6).when('frequency', {
-      is: 'weekly',
-      then: Joi.required(),
-      otherwise: Joi.optional()
-    }).messages({
-      'number.min': 'Ngày trong tuần phải từ 0-6 (0=Chủ nhật)',
-      'number.max': 'Ngày trong tuần phải từ 0-6 (0=Chủ nhật)',
-      'any.required': 'Ngày trong tuần là bắt buộc cho tần suất weekly'
+    description: Joi.string().max(1000).optional().messages({
+      'string.max': 'Description cannot exceed 1000 characters'
     }),
-    dayOfMonth: Joi.number().min(1).max(31).when('frequency', {
-      is: 'monthly',
-      then: Joi.required(),
-      otherwise: Joi.optional()
-    }).messages({
-      'number.min': 'Ngày trong tháng phải từ 1-31',
-      'number.max': 'Ngày trong tháng phải từ 1-31',
-      'any.required': 'Ngày trong tháng là bắt buộc cho tần suất monthly'
+    scheduleType: Joi.string().valid('minutely', 'hourly', 'daily', 'weekly', 'monthly', 'yearly').required().messages({
+      'any.only': 'Schedule type must be minutely, hourly, daily, weekly, monthly or yearly',
+      'any.required': 'Schedule type is required'
+    }),
+    time: Joi.object({
+      hour: Joi.number().integer().min(0).max(23).when('$scheduleType', {
+        is: Joi.string().valid('minutely', 'hourly'),
+        then: Joi.optional(),
+        otherwise: Joi.required()
+      }).messages({
+        'number.integer': 'Hour must be an integer',
+        'number.min': 'Hour must be between 0-23',
+        'number.max': 'Hour must be between 0-23',
+        'any.required': 'Hour is required for this schedule type'
+      }),
+      minute: Joi.number().integer().min(0).max(59).when('$scheduleType', {
+        is: Joi.string().valid('minutely', 'hourly'),
+        then: Joi.optional(),
+        otherwise: Joi.required()
+      }).messages({
+        'number.integer': 'Minute must be an integer',
+        'number.min': 'Minute must be between 0-59',
+        'number.max': 'Minute must be between 0-59',
+        'any.required': 'Minute is required for this schedule type'
+      }),
+      dayOfWeek: Joi.number().integer().min(0).max(6).when('$scheduleType', {
+        is: 'weekly',
+        then: Joi.required(),
+        otherwise: Joi.optional()
+      }).messages({
+        'number.integer': 'Day of week must be an integer',
+        'number.min': 'Day of week must be between 0-6 (0=Sunday)',
+        'number.max': 'Day of week must be between 0-6 (0=Sunday)',
+        'any.required': 'Day of week is required for weekly schedule'
+      }),
+      dayOfMonth: Joi.number().integer().min(1).max(31).when('$scheduleType', {
+        is: Joi.string().valid('monthly', 'yearly'),
+        then: Joi.required(),
+        otherwise: Joi.optional()
+      }).messages({
+        'number.integer': 'Day of month must be an integer',
+        'number.min': 'Day of month must be between 1-31',
+        'number.max': 'Day of month must be between 1-31',
+        'any.required': 'Day of month is required for monthly/yearly schedule'
+      }),
+      month: Joi.number().integer().min(1).max(12).when('$scheduleType', {
+        is: 'yearly',
+        then: Joi.required(),
+        otherwise: Joi.optional()
+      }).messages({
+        'number.integer': 'Month must be an integer',
+        'number.min': 'Month must be between 1-12',
+        'number.max': 'Month must be between 1-12',
+        'any.required': 'Month is required for yearly schedule'
+      })
+    }).required().messages({
+      'object.base': 'Time information must be an object'
+    }),
+    maxRuns: Joi.number().integer().min(1).max(1000).optional().messages({
+      'number.integer': 'Maximum runs must be an integer',
+      'number.min': 'Maximum runs must be greater than 0',
+      'number.max': 'Maximum runs cannot exceed 1000'
+    }),
+    settings: Joi.object().optional().messages({
+      'object.base': 'Settings must be an object'
     })
   });
 
-  const { error } = schema.validate(req.body);
+  const { error } = schema.validate(req.body, { context: { scheduleType: req.body.scheduleType } });
   if (error) {
     return res.status(400).json({
       success: false,
-      message: 'Dữ liệu không hợp lệ',
+      message: 'Invalid data',
       errors: error.details.map(detail => detail.message)
     });
   }
 
-  // Tạo cron expression từ form data
+  // Create cron expression from time information
   try {
-    const cronExpression = createCronExpression(
-      req.body.frequency,
-      req.body.time,
-      req.body.dayOfWeek,
-      req.body.dayOfMonth
+    const cronExpression = createCronExpressionFromTime(
+      req.body.scheduleType,
+      req.body.time
     );
     req.body.cronExpression = cronExpression;
   } catch (error) {
     return res.status(400).json({
       success: false,
-      message: 'Không thể tạo biểu thức cron',
+      message: 'Cannot create cron expression',
       error: error.message
     });
   }
@@ -205,9 +214,8 @@ const validateCronForm = (req, res, next) => {
 };
 
 module.exports = {
-  validateCreateSchedule,
   validateUpdateSchedule,
   validateScheduleQuery,
-  validateCronForm,
-  createCronExpression
+  validateScheduleTime,
+  createCronExpressionFromTime
 }; 

@@ -1,7 +1,7 @@
-# Hướng dẫn Setup và Sử dụng Chức năng Đặt lịch
+# Schedule Setup Guide
 
 ## Tổng quan
-Chức năng đặt lịch cho phép user tự động lấy dữ liệu và phân tích kênh YouTube theo thời gian định sẵn. Hệ thống sử dụng cron jobs để thực hiện các lịch đã đặt.
+Hệ thống đặt lịch cho phép tự động lấy dữ liệu và phân tích kênh YouTube theo thời gian định sẵn.
 
 ## Cài đặt
 
@@ -10,254 +10,194 @@ Chức năng đặt lịch cho phép user tự động lấy dữ liệu và ph�
 npm install node-cron
 ```
 
-### 2. Tạo bảng schedules trong database
+### 2. Tạo bảng Schedule
+Chạy migration script để tạo bảng:
 ```bash
-npm run create-schedule-table
+node scripts/createScheduleTable.js
 ```
 
-### 3. Khởi động server
-```bash
-npm run dev
-```
-
-## Cách sử dụng
-
-### 1. Tạo lịch đơn giản (Khuyến nghị)
-
-**Endpoint:** `POST /api/schedules/form`
-
-**Ví dụ tạo lịch hàng ngày:**
+### 3. Cấu hình trong server.js
+Đảm bảo đã import và sử dụng schedule routes:
 ```javascript
-const response = await fetch('/api/schedules/form', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    channelId: 'uuid-của-kênh',
-    name: 'Phân tích hàng ngày',
-    description: 'Tự động phân tích kênh mỗi ngày lúc 9:00',
-    frequency: 'daily',
-    time: '09:00',
-    maxRuns: 30
-  })
-});
+const scheduleRoutes = require('./routes/scheduleRoutes');
+app.use('/api/schedules', scheduleRoutes);
 ```
 
-**Ví dụ tạo lịch hàng tuần:**
-```javascript
-const response = await fetch('/api/schedules/form', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    channelId: 'uuid-của-kênh',
-    name: 'Phân tích hàng tuần',
-    description: 'Tự động phân tích kênh mỗi thứ 2 lúc 9:00',
-    frequency: 'weekly',
-    time: '09:00',
-    dayOfWeek: 1, // 0=Chủ nhật, 1=Thứ 2, ..., 6=Thứ 7
-    maxRuns: 52
-  })
-});
-```
+## Sử dụng API
 
-### 2. Tạo lịch với cron expression
+### Tạo lịch mới
 
 **Endpoint:** `POST /api/schedules`
 
-```javascript
-const response = await fetch('/api/schedules', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json'
+**Headers:**
+```
+Authorization: Bearer <your-token>
+Content-Type: application/json
+```
+
+**Ví dụ tạo lịch hàng ngày:**
+```json
+{
+  "channelId": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Phân tích hàng ngày",
+  "description": "Phân tích kênh mỗi ngày lúc 9:00 AM",
+  "scheduleType": "daily",
+  "time": {
+    "hour": 9,
+    "minute": 0
   },
-  body: JSON.stringify({
-    channelId: 'uuid-của-kênh',
-    name: 'Phân tích mỗi 2 giờ',
-    description: 'Tự động phân tích kênh mỗi 2 giờ',
-    cronExpression: '0 */2 * * *',
-    maxRuns: 100
-  })
-});
+  "maxRuns": 30
+}
 ```
 
-### 3. Quản lý lịch
-
-**Lấy danh sách lịch:**
-```javascript
-const response = await fetch('/api/schedules?page=1&limit=10&status=active', {
-  headers: {
-    'Authorization': 'Bearer your-token'
-  }
-});
-```
-
-**Bật/tắt lịch:**
-```javascript
-const response = await fetch(`/api/schedules/${scheduleId}/toggle`, {
-  method: 'PATCH',
-  headers: {
-    'Authorization': 'Bearer your-token'
-  }
-});
-```
-
-**Chạy lịch ngay lập tức:**
-```javascript
-const response = await fetch(`/api/schedules/${scheduleId}/run`, {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token'
-  }
-});
-```
-
-**Cập nhật lịch:**
-```javascript
-const response = await fetch(`/api/schedules/${scheduleId}`, {
-  method: 'PUT',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json'
+**Ví dụ tạo lịch hàng tuần:**
+```json
+{
+  "channelId": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Phân tích hàng tuần",
+  "description": "Phân tích kênh mỗi thứ 2 lúc 9:00 AM",
+  "scheduleType": "weekly",
+  "time": {
+    "hour": 9,
+    "minute": 0,
+    "dayOfWeek": 1
   },
-  body: JSON.stringify({
-    name: 'Tên lịch mới',
-    cronExpression: '0 10 * * *',
-    isActive: false
-  })
-});
+  "maxRuns": 52
+}
 ```
 
-**Xóa lịch:**
-```javascript
-const response = await fetch(`/api/schedules/${scheduleId}`, {
-  method: 'DELETE',
-  headers: {
-    'Authorization': 'Bearer your-token'
+**Ví dụ tạo lịch hàng tháng:**
+```json
+{
+  "channelId": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Phân tích hàng tháng",
+  "description": "Phân tích kênh mỗi ngày 1 lúc 9:00 AM",
+  "scheduleType": "monthly",
+  "time": {
+    "hour": 9,
+    "minute": 0,
+    "dayOfMonth": 1
+  },
+  "maxRuns": 12
+}
+```
+
+**Ví dụ tạo lịch hàng năm:**
+```json
+{
+  "channelId": "123e4567-e89b-12d3-a456-426614174000",
+  "name": "Phân tích hàng năm",
+  "description": "Phân tích kênh mỗi ngày 1 tháng 1 lúc 9:00 AM",
+  "scheduleType": "yearly",
+  "time": {
+    "hour": 9,
+    "minute": 0,
+    "dayOfMonth": 1,
+    "month": 1
+  },
+  "maxRuns": 5
+}
+```
+
+### Các loại lịch có sẵn
+
+| Loại lịch | Mô tả | Thông tin thời gian cần thiết |
+|-----------|-------|-------------------------------|
+| `minutely` | Chạy mỗi phút | Không cần |
+| `hourly` | Chạy mỗi giờ | Không cần |
+| `daily` | Chạy hàng ngày | `hour`, `minute` |
+| `weekly` | Chạy hàng tuần | `hour`, `minute`, `dayOfWeek` |
+| `monthly` | Chạy hàng tháng | `hour`, `minute`, `dayOfMonth` |
+| `yearly` | Chạy hàng năm | `hour`, `minute`, `dayOfMonth`, `month` |
+
+### Thông tin thời gian
+
+#### Cấu trúc object `time`:
+```json
+{
+  "time": {
+    "hour": 9,        // Giờ (0-23)
+    "minute": 0,      // Phút (0-59)
+    "dayOfWeek": 1,   // Ngày trong tuần (0-6, 0=Chủ nhật)
+    "dayOfMonth": 1,  // Ngày trong tháng (1-31)
+    "month": 1        // Tháng (1-12)
   }
-});
-```
-
-## Tần suất có sẵn
-
-### 1. Minutely (Mỗi phút)
-```javascript
-{
-  frequency: 'minutely'
-  // Không cần time
 }
 ```
 
-### 2. Hourly (Mỗi giờ)
-```javascript
-{
-  frequency: 'hourly'
-  // Không cần time
-}
-```
+#### Ngày trong tuần:
+- `0`: Chủ nhật
+- `1`: Thứ 2
+- `2`: Thứ 3
+- `3`: Thứ 4
+- `4`: Thứ 5
+- `5`: Thứ 6
+- `6`: Thứ 7
 
-### 3. Daily (Hàng ngày)
-```javascript
-{
-  frequency: 'daily',
-  time: '09:00' // Format: HH:MM
-}
-```
+### Quản lý lịch
 
-### 4. Weekly (Hàng tuần)
-```javascript
-{
-  frequency: 'weekly',
-  time: '09:00',
-  dayOfWeek: 1 // 0=Chủ nhật, 1=Thứ 2, ..., 6=Thứ 7
-}
-```
-
-### 5. Monthly (Hàng tháng)
-```javascript
-{
-  frequency: 'monthly',
-  time: '09:00',
-  dayOfMonth: 1 // 1-31
-}
-```
-
-## Cron Expression Examples
-
-### Các ví dụ phổ biến:
-
+#### Lấy danh sách lịch:
 ```bash
-# Mỗi phút
-* * * * *
-
-# Mỗi giờ
-0 * * * *
-
-# Hàng ngày lúc 9:00 AM
-0 9 * * *
-
-# Hàng ngày lúc 9:00 AM và 6:00 PM
-0 9,18 * * *
-
-# Hàng tuần vào thứ 2 lúc 9:00 AM
-0 9 * * 1
-
-# Hàng tháng vào ngày 1 lúc 9:00 AM
-0 9 1 * *
-
-# Mỗi 30 phút
-*/30 * * * *
-
-# Mỗi 2 giờ
-0 */2 * * *
-
-# Chỉ vào các ngày trong tuần (thứ 2-6)
-0 9 * * 1-5
+GET /api/schedules?page=1&limit=10&status=active
 ```
+
+#### Cập nhật lịch:
+```bash
+PUT /api/schedules/:id
+```
+
+#### Bật/tắt lịch:
+```bash
+PATCH /api/schedules/:id/toggle
+```
+
+#### Chạy lịch ngay lập tức:
+```bash
+POST /api/schedules/:id/run
+```
+
+#### Xóa lịch:
+```bash
+DELETE /api/schedules/:id
+```
+
+## Cron Expression
+
+Hệ thống tự động tạo cron expression từ thông tin thời gian:
+
+| Loại lịch | Cron Expression |
+|-----------|-----------------|
+| minutely | `* * * * *` |
+| hourly | `0 * * * *` |
+| daily | `{minute} {hour} * * *` |
+| weekly | `{minute} {hour} * * {dayOfWeek}` |
+| monthly | `{minute} {hour} {dayOfMonth} * *` |
+| yearly | `{minute} {hour} {dayOfMonth} {month} *` |
 
 ## Lưu ý quan trọng
 
-### 1. Bảo mật
-- Tất cả endpoints đều yêu cầu authentication
-- User chỉ có thể quản lý lịch của mình
-- Chỉ có thể đặt lịch cho kênh đã phân tích
-
-### 2. Giới hạn
-- Số lần chạy tối đa có thể thiết lập để tránh chạy vô hạn
-- Mỗi user có thể tạo nhiều lịch cho nhiều kênh khác nhau
-
-### 3. Timezone
-- Tất cả thời gian đều theo timezone của server
-- Đảm bảo server có timezone đúng
-
-### 4. Performance
-- Hệ thống tự động quản lý cron jobs
-- Khi server restart, các lịch active sẽ được khôi phục tự động
-
-### 5. Monitoring
-- Theo dõi logs để kiểm tra việc thực thi lịch
-- Có thể xem thông tin `lastRunAt`, `nextRunAt`, `runCount` để monitor
+1. **Authentication**: Tất cả API đều yêu cầu token hợp lệ
+2. **Quyền sở hữu**: User chỉ có thể quản lý lịch của mình
+3. **Kênh hợp lệ**: Chỉ có thể đặt lịch cho kênh đã phân tích
+4. **Giới hạn chạy**: Có thể thiết lập `maxRuns` để tránh chạy vô hạn
+5. **Timezone**: Tất cả thời gian đều theo timezone của server
+6. **Tự động khởi động**: Lịch sẽ tự động khởi động khi server start
 
 ## Troubleshooting
 
-### 1. Lịch không chạy
-- Kiểm tra `isActive` có đúng không
-- Kiểm tra `cronExpression` có hợp lệ không
-- Kiểm tra logs của server
+### Lỗi thường gặp:
 
-### 2. Lỗi validation
-- Đảm bảo `channelId` là UUID hợp lệ
-- Đảm bảo `cronExpression` đúng format
-- Đảm bảo các field bắt buộc đã được điền
+1. **"Channel not found"**: Đảm bảo channelId tồn tại và thuộc về user
+2. **"Invalid time data"**: Kiểm tra thông tin thời gian theo loại lịch
+3. **"Schedule not found"**: Kiểm tra scheduleId và quyền sở hữu
+4. **"Cron job failed"**: Kiểm tra log server để debug
 
-### 3. Lỗi database
-- Kiểm tra kết nối database
-- Chạy lại script tạo bảng nếu cần
+### Debug:
 
-## API Documentation
-Xem chi tiết API tại file: `SCHEDULE_API_DOCS.md` 
+```bash
+# Kiểm tra log server
+tail -f logs/app.log
+
+# Kiểm tra trạng thái cron jobs
+console.log(global.activeCronJobs);
+``` 

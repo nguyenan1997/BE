@@ -21,10 +21,80 @@ Content-Type: application/json
   "channelId": "uuid-của-kênh",
   "name": "Tên lịch",
   "description": "Mô tả lịch (tùy chọn)",
-  "cronExpression": "0 9 * * *",
-  "maxRuns": 10,
+  "scheduleType": "daily",
+  "time": {
+    "hour": 9,
+    "minute": 0
+  },
+  "maxRuns": 30,
   "settings": {
     "notifyOnComplete": true
+  }
+}
+```
+
+**Các loại lịch có sẵn:**
+
+#### Minutely (Mỗi phút)
+```json
+{
+  "scheduleType": "minutely",
+  "time": {}
+}
+```
+
+#### Hourly (Mỗi giờ)
+```json
+{
+  "scheduleType": "hourly",
+  "time": {}
+}
+```
+
+#### Daily (Hàng ngày)
+```json
+{
+  "scheduleType": "daily",
+  "time": {
+    "hour": 9,
+    "minute": 0
+  }
+}
+```
+
+#### Weekly (Hàng tuần)
+```json
+{
+  "scheduleType": "weekly",
+  "time": {
+    "hour": 9,
+    "minute": 0,
+    "dayOfWeek": 1
+  }
+}
+```
+
+#### Monthly (Hàng tháng)
+```json
+{
+  "scheduleType": "monthly",
+  "time": {
+    "hour": 9,
+    "minute": 0,
+    "dayOfMonth": 1
+  }
+}
+```
+
+#### Yearly (Hàng năm)
+```json
+{
+  "scheduleType": "yearly",
+  "time": {
+    "hour": 9,
+    "minute": 0,
+    "dayOfMonth": 1,
+    "month": 1
   }
 }
 ```
@@ -45,7 +115,7 @@ Content-Type: application/json
     "lastRunAt": null,
     "nextRunAt": "2024-01-15T09:00:00.000Z",
     "runCount": 0,
-    "maxRuns": 10,
+    "maxRuns": 30,
     "settings": {
       "notifyOnComplete": true
     },
@@ -55,48 +125,7 @@ Content-Type: application/json
 }
 ```
 
-### 2. Tạo lịch từ form đơn giản
-
-**POST** `/api/schedules/form`
-
-**Headers:**
-```
-Authorization: Bearer <token>
-Content-Type: application/json
-```
-
-**Body:**
-```json
-{
-  "channelId": "uuid-của-kênh",
-  "name": "Tên lịch",
-  "description": "Mô tả lịch (tùy chọn)",
-  "frequency": "daily",
-  "time": "09:00",
-  "maxRuns": 10
-}
-```
-
-**Tần suất có sẵn:**
-- `minutely`: Mỗi phút
-- `hourly`: Mỗi giờ
-- `daily`: Hàng ngày (cần thời gian)
-- `weekly`: Hàng tuần (cần thời gian + ngày trong tuần)
-- `monthly`: Hàng tháng (cần thời gian + ngày trong tháng)
-
-**Ví dụ weekly:**
-```json
-{
-  "channelId": "uuid",
-  "name": "Phân tích hàng tuần",
-  "frequency": "weekly",
-  "time": "09:00",
-  "dayOfWeek": 1,
-  "maxRuns": 52
-}
-```
-
-### 3. Lấy danh sách lịch
+### 2. Lấy danh sách lịch
 
 **GET** `/api/schedules?page=1&limit=10&status=active`
 
@@ -124,7 +153,7 @@ Authorization: Bearer <token>
       "lastRunAt": "2024-01-15T09:00:00.000Z",
       "nextRunAt": "2024-01-16T09:00:00.000Z",
       "runCount": 5,
-      "maxRuns": 10,
+      "maxRuns": 30,
       "channel": {
         "id": "uuid",
         "channelName": "Tên kênh",
@@ -141,7 +170,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 4. Cập nhật lịch
+### 3. Cập nhật lịch
 
 **PUT** `/api/schedules/:id`
 
@@ -162,7 +191,7 @@ Content-Type: application/json
 }
 ```
 
-### 5. Bật/tắt lịch
+### 4. Bật/tắt lịch
 
 **PATCH** `/api/schedules/:id/toggle`
 
@@ -183,7 +212,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 6. Chạy lịch ngay lập tức
+### 5. Chạy lịch ngay lập tức
 
 **POST** `/api/schedules/:id/run`
 
@@ -200,7 +229,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 7. Xóa lịch
+### 6. Xóa lịch
 
 **DELETE** `/api/schedules/:id`
 
@@ -217,48 +246,55 @@ Authorization: Bearer <token>
 }
 ```
 
+## Thông tin thời gian
+
+### Cấu trúc object `time`:
+
+```json
+{
+  "time": {
+    "hour": 9,        // Giờ (0-23)
+    "minute": 0,      // Phút (0-59)
+    "dayOfWeek": 1,   // Ngày trong tuần (0-6, 0=Chủ nhật) - chỉ cho weekly
+    "dayOfMonth": 1,  // Ngày trong tháng (1-31) - chỉ cho monthly/yearly
+    "month": 1        // Tháng (1-12) - chỉ cho yearly
+  }
+}
+```
+
+### Yêu cầu theo loại lịch:
+
+| Loại lịch | Bắt buộc | Tùy chọn |
+|-----------|----------|----------|
+| minutely | - | - |
+| hourly | - | - |
+| daily | hour, minute | - |
+| weekly | hour, minute, dayOfWeek | - |
+| monthly | hour, minute, dayOfMonth | - |
+| yearly | hour, minute, dayOfMonth, month | - |
+
 ## Cron Expression Examples
 
-### Các ví dụ cron expression phổ biến:
+### Các ví dụ cron expression được tạo tự động:
 
 ```bash
-# Mỗi phút
+# Minutely
 * * * * *
 
-# Mỗi giờ (phút thứ 0)
+# Hourly  
 0 * * * *
 
-# Hàng ngày lúc 9:00 AM
+# Daily lúc 9:00 AM
 0 9 * * *
 
-# Hàng ngày lúc 9:00 AM và 6:00 PM
-0 9,18 * * *
-
-# Hàng tuần vào thứ 2 lúc 9:00 AM
+# Weekly vào thứ 2 lúc 9:00 AM
 0 9 * * 1
 
-# Hàng tháng vào ngày 1 lúc 9:00 AM
+# Monthly vào ngày 1 lúc 9:00 AM
 0 9 1 * *
 
-# Mỗi 30 phút
-*/30 * * * *
-
-# Mỗi 2 giờ
-0 */2 * * *
-
-# Chỉ vào các ngày trong tuần (thứ 2-6)
-0 9 * * 1-5
-```
-
-### Giải thích cron expression:
-```
-* * * * *
-│ │ │ │ │
-│ │ │ │ └── Ngày trong tuần (0-7, 0 và 7 = Chủ nhật)
-│ │ │ └──── Tháng (1-12)
-│ │ └────── Ngày trong tháng (1-31)
-│ └──────── Giờ (0-23)
-└────────── Phút (0-59)
+# Yearly vào ngày 1 tháng 1 lúc 9:00 AM
+0 9 1 1 *
 ```
 
 ## Lưu ý quan trọng
@@ -277,8 +313,9 @@ Authorization: Bearer <token>
   "success": false,
   "message": "Dữ liệu không hợp lệ",
   "errors": [
-    "Biểu thức cron không hợp lệ",
-    "Tên lịch phải có ít nhất 1 ký tự"
+    "Giờ phải từ 0-23",
+    "Phút phải từ 0-59",
+    "Ngày trong tuần phải từ 0-6"
   ]
 }
 ```
