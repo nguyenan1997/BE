@@ -18,14 +18,11 @@ const authenticateToken = async (req, res, next) => {
     let decoded;
     let originalToken = token;
 
-    // Check if this is a hashed token
     const tokenData = await getToken(token);
     if (tokenData) {
-      // This is a hashed token, use the original token
       originalToken = tokenData.originalToken;
       decoded = jwt.verify(originalToken, process.env.JWT_SECRET);
     } else {
-      // This might be an original token (for backward compatibility)
       try {
         decoded = jwt.verify(token, process.env.JWT_SECRET);
       } catch (jwtError) {
@@ -36,7 +33,6 @@ const authenticateToken = async (req, res, next) => {
       }
     }
     
-    // Check if user exists and is active
     const user = await User.findByPk(decoded.userId);
     if (!user || !user.isActive) {
       return res.status(401).json({
@@ -45,7 +41,6 @@ const authenticateToken = async (req, res, next) => {
       });
     }
 
-    // Add user info to request
     req.user = decoded;
     req.currentUser = user;
     

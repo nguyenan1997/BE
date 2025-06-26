@@ -202,7 +202,6 @@ const logout = async (req, res, next) => {
     const token = req.headers.authorization?.replace('Bearer ', '');
     
     if (token) {
-      // Remove token from store
       await removeToken(token);
     }
 
