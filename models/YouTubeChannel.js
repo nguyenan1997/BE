@@ -7,38 +7,18 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    field: 'user_id',
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
   channelName: {
-    type: DataTypes.STRING(200),
+    type: DataTypes.STRING(255),
     allowNull: false
-  },
-  subscriberCount: {
-    type: DataTypes.STRING(50),
-    allowNull: true
-  },
-  totalViews: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  estimatedRevenue: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  watchTime: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  views48h: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  views60min: {
-    type: DataTypes.STRING(100),
-    allowNull: true
-  },
-  recentVideos: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    comment: 'Array of 5 recent videos with views, likes, comments'
   },
   description: {
     type: DataTypes.TEXT,
@@ -50,77 +30,42 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   },
   joinDate: {
     type: DataTypes.STRING(100),
-    allowNull: true
+    allowNull: true,
+    field: 'join_date'
   },
   location: {
     type: DataTypes.STRING(100),
     allowNull: true
   },
-  socialLinks: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
-  aiAnalysis: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
   imageUrl: {
     type: DataTypes.TEXT,
-    allowNull: true
+    allowNull: true,
+    field: 'image_url'
   },
   originalImageName: {
-    type: DataTypes.STRING(200),
-    allowNull: true
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'original_image_name'
+  },
+  socialLinks: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    field: 'social_links'
   },
   analysisStatus: {
     type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed'),
-    defaultValue: 'pending'
+    defaultValue: 'pending',
+    field: 'analysis_status'
   },
   analysisError: {
     type: DataTypes.TEXT,
-    allowNull: true
-  },
-  // warning monetization
-  monetizationWarning: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    comment: 'Monetization warning status'
-  },
-  monetizationWarningReason: {
-    type: DataTypes.TEXT,
     allowNull: true,
-    comment: 'Monetization warning reason'
-  },
-  monetizationWarningDate: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    comment: 'Monetization warning date'
-  },
-  // warning community guidelines
-  communityGuidelinesWarning: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    comment: 'Community guidelines warning status'
-  },
-  communityGuidelinesWarningReason: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'Community guidelines warning reason'
-  },
-  communityGuidelinesWarningDate: {
-    type: DataTypes.DATE,
-    allowNull: true,
-    comment: 'Community guidelines warning date'
-  },
-  // warning summary
-  warnings: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    comment: 'Summary of all warnings with details'
+    field: 'analysis_error'
   },
   analyzedBy: {
     type: DataTypes.UUID,
     allowNull: true,
+    field: 'analyzed_by',
     references: {
       model: 'users',
       key: 'id'
@@ -128,7 +73,23 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   }
 }, {
   tableName: 'youtube_channels',
-  timestamps: true
+  timestamps: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  indexes: [
+    {
+      fields: ['user_id']
+    },
+    {
+      fields: ['analyzed_by']
+    },
+    {
+      fields: ['analysis_status']
+    },
+    {
+      fields: ['channel_name']
+    }
+  ]
 });
 
 module.exports = YouTubeChannel; 

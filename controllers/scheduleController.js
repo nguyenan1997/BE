@@ -8,11 +8,11 @@ const activeJobs = new Map();
 const createSchedule = async (req, res) => {
   try {
     const { channelId, name, description, cronExpression, maxRuns, settings } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     // Check if channel exists and belongs to user
     const channel = await YouTubeChannel.findOne({
-      where: { id: channelId, analyzedBy: userId }
+      where: { id: channelId, userId: userId }
     });
 
     if (!channel) {
@@ -68,7 +68,7 @@ const createSchedule = async (req, res) => {
 // Get user schedules
 const getUserSchedules = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const { page = 1, limit = 10, status } = req.query;
 
     const whereClause = { userId };
@@ -117,7 +117,7 @@ const getUserSchedules = async (req, res) => {
 const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
     const updateData = req.body;
 
     const schedule = await Schedule.findOne({
@@ -169,7 +169,7 @@ const updateSchedule = async (req, res) => {
 const deleteSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     const schedule = await Schedule.findOne({
       where: { id, userId }
@@ -206,7 +206,7 @@ const deleteSchedule = async (req, res) => {
 const toggleSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     const schedule = await Schedule.findOne({
       where: { id, userId }
@@ -248,7 +248,7 @@ const toggleSchedule = async (req, res) => {
 const runScheduleNow = async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.userId;
 
     const schedule = await Schedule.findOne({
       where: { id, userId },
@@ -335,9 +335,9 @@ const executeSchedule = async (schedule) => {
     // Import controller to run analysis
     const { fetchAndAnalyze } = require('./youtubeController');
     
-    // Create mock request object
+    // Create mock request object with updated structure
     const mockReq = {
-      user: { id: schedule.userId },
+      user: { userId: schedule.userId },
       body: { channelId: schedule.channelId }
     };
 

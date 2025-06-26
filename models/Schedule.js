@@ -26,55 +26,46 @@ const Schedule = sequelize.define('Schedule', {
     }
   },
   name: {
-    type: DataTypes.STRING(200),
-    allowNull: false,
-    comment: 'Tên lịch đặt'
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   description: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    comment: 'Mô tả lịch đặt'
+    allowNull: true
   },
   cronExpression: {
     type: DataTypes.STRING(100),
     allowNull: false,
-    field: 'cron_expression',
-    comment: 'Biểu thức cron để định lịch'
+    field: 'cron_expression'
   },
   isActive: {
     type: DataTypes.BOOLEAN,
     defaultValue: true,
-    field: 'is_active',
-    comment: 'Trạng thái hoạt động của lịch'
+    field: 'is_active'
   },
   lastRunAt: {
     type: DataTypes.DATE,
     allowNull: true,
-    field: 'last_run_at',
-    comment: 'Thời gian chạy lần cuối'
+    field: 'last_run_at'
   },
   nextRunAt: {
     type: DataTypes.DATE,
     allowNull: true,
-    field: 'next_run_at',
-    comment: 'Thời gian chạy tiếp theo'
+    field: 'next_run_at'
   },
   runCount: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
-    field: 'run_count',
-    comment: 'Số lần đã chạy'
+    field: 'run_count'
   },
   maxRuns: {
     type: DataTypes.INTEGER,
     allowNull: true,
-    field: 'max_runs',
-    comment: 'Số lần chạy tối đa (null = không giới hạn)'
+    field: 'max_runs'
   },
   settings: {
     type: DataTypes.JSON,
-    allowNull: true,
-    comment: 'Các cài đặt bổ sung cho lịch'
+    allowNull: true
   }
 }, {
   tableName: 'schedules',

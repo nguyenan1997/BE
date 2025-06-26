@@ -3,8 +3,7 @@ const User = require('../models/User');
 const { Op } = require('sequelize');
 const { 
   hashToken, 
-  addToken, 
-  getToken, 
+  addToken,  
   removeToken, 
   removeUserTokens 
 } = require('../utils/tokenStore');
@@ -107,6 +106,7 @@ const login = async (req, res, next) => {
 
     // Generate original JWT token
     const originalToken = generateToken(user.id);
+    console.log(originalToken);
     
     // Hash the token for frontend
     const hashedToken = hashToken(originalToken);

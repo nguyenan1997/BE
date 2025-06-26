@@ -6,9 +6,13 @@ const {
   getAnalysisResult, 
   getAllChannels, 
   deleteChannel,
-  updateChannelWarnings,
   addChannelManually,
-  analyzeChannelFromUrl
+  analyzeChannelFromUrl,
+  getChannelStatisticsHistory,
+  getChannelVideos,
+  getChannelWarnings,
+  getChannelAnalysisHistory,
+  updateWarningStatus
 } = require('../controllers/youtubeController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const { validateAddChannel, validateChannelUrl, validateUpdateWarnings } = require('../validators/youtubeValidator');
@@ -21,6 +25,14 @@ router.get('/result/:id', authenticateToken, getAnalysisResult);
 router.get('/channels', authenticateToken, getAllChannels);
 router.post('/channels', authenticateToken, validateAddChannel, addChannelManually);
 router.delete('/channels/:id', authenticateToken, deleteChannel);
-router.put('/channels/:id/warnings', authenticateToken, validateUpdateWarnings, updateChannelWarnings);
+
+// Simplified warning management
+router.get('/channels/:id/warnings', authenticateToken, getChannelWarnings);
+router.patch('/channels/:id/warnings/:warningId/status', authenticateToken, updateWarningStatus);
+
+// New endpoints for detailed channel management
+router.get('/channels/:id/statistics', authenticateToken, getChannelStatisticsHistory);
+router.get('/channels/:id/videos', authenticateToken, getChannelVideos);
+router.get('/channels/:id/analyses', authenticateToken, getChannelAnalysisHistory);
 
 module.exports = router; 

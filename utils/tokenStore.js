@@ -18,7 +18,19 @@ const addToken = async (hashedToken, tokenData) => {
 
 // Get token from store
 const getToken = async (hashedToken) => {
-  return tokenStore.get(hashedToken);
+  const tokenData = tokenStore.get(hashedToken);
+  if (!tokenData) return null;
+  
+  // Check if token is expired (24h)
+  const tokenAge = Date.now() - tokenData.createdAt.getTime();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  
+  if (tokenAge > maxAge) {
+    tokenStore.delete(hashedToken);
+    return null;
+  }
+  
+  return tokenData;
 };
 
 // Remove token from store
@@ -44,6 +56,22 @@ const getStoreSize = async () => {
 const clearStore = async () => {
   tokenStore.clear();
 };
+
+// Cleanup expired tokens
+const cleanupExpiredTokens = () => {
+  const now = Date.now();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  
+  for (const [hashedKey, value] of tokenStore.entries()) {
+    const tokenAge = now - value.createdAt.getTime();
+    if (tokenAge > maxAge) {
+      tokenStore.delete(hashedKey);
+    }
+  }
+};
+
+// Run cleanup every hour
+setInterval(cleanupExpiredTokens, 60 * 60 * 1000);
 
 module.exports = {
   hashToken,
