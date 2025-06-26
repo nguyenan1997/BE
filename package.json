@@ -9,6 +9,7 @@
     "test": "jest",
     "create-admin": "node scripts/createAdmin.js",
     "create-schedule-table": "node scripts/createScheduleTable.js",
+    "setup-fresh-database": "node scripts/setup-fresh-database.js",
     "monitor-tokens": "node scripts/monitorTokens.js monitor",
     "clear-tokens": "node scripts/monitorTokens.js clear"
   },
