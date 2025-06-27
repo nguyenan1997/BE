@@ -8,6 +8,7 @@ const {
 const {
   analyzeMultipleYouTubeImages,
 } = require("../config/gemini");
+const { parseViewCount } = require("../utils/parseUtils");
 const path = require("path");
 const fs = require("fs").promises;
 const axios = require("axios");
@@ -17,10 +18,10 @@ const fetchAndAnalyze = async (req, res, next) => {
   try {
     // Use default URLs if imageUrls is not provided in request body
     const imageUrls = req.body?.imageUrls || [
-      "https://media.discordapp.net/attachments/1380449824138203288/1381211431655178381/IMG_1229.png?ex=685c71a2&is=685b2022&hm=0aebb78950718a46d490265c19a24b7387cfab32ca4cc7eafbf00092ce731f4f&=&format=webp&quality=lossless&width=250&height=543",
-      "https://media.discordapp.net/attachments/1380449824138203288/1381211432456163459/IMG_1230.png?ex=685c71a3&is=685b2023&hm=b9693f18e705ddc339bc3f17e6ee9b5e9823e17a05e209727c0a38e0adfdf7c4&=&format=webp&quality=lossless&width=250&height=543",
-      "https://media.discordapp.net/attachments/1380449824138203288/1381211433118994462/IMG_1231.png?ex=685c71a3&is=685b2023&hm=fdf606cb630759faf65665758b4bb1eb7e4041ca9d54cb2283bd0e6ac9235856&=&format=webp&quality=lossless&width=250&height=543",
-      "https://media.discordapp.net/attachments/1380449824138203288/1381211433865318410/IMG_1232.png?ex=685c71a3&is=685b2023&hm=a9a887b1561d7dc73b0cc99f291ad227789a979de1856e8fcd0bd88a242aca23&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211431655178381/IMG_1229.png?ex=685f14a2&is=685dc322&hm=39d791a69cddf8df6d9b0b8bb4dc1d6a3d124e52250ab6e24f8ef25fc6384123&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211432456163459/IMG_1230.png?ex=685f14a3&is=685dc323&hm=c7b529ec2372e07baf40f12e3f8007e477b0e6efed4525d53a3564fd454f789b&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211433118994462/IMG_1231.png?ex=685f14a3&is=685dc323&hm=bba14f4a43f1604eff3111e33486f4734fc869f4d340de1664028a9251998c06&=&format=webp&quality=lossless&width=250&height=543",
+      "https://media.discordapp.net/attachments/1380449824138203288/1381211433865318410/IMG_1232.png?ex=685f14a3&is=685dc323&hm=9361f9a99d029289b14849e75e53615a6db4023d4dda031f1b9ae822d4c8bd02&=&format=webp&quality=lossless&width=250&height=543",
     ];
 
     // Validate input
@@ -165,9 +166,9 @@ const fetchAndAnalyzeMultipleImages = async (imageUrls, channelId, userId) => {
             thumbnailUrl: video.thumbnailUrl || video.thumbnail || null,
             publishedAt: video.publishedAt ? new Date(video.publishedAt) : null,
             duration: video.duration || null,
-            viewCount: video.viewCount || video.views || null,
-            likeCount: video.likeCount || video.likes || null,
-            commentCount: video.commentCount || video.comments || null,
+            viewCount: parseViewCount(video.viewCount || video.views),
+            likeCount: parseViewCount(video.likeCount || video.likes),
+            commentCount: parseViewCount(video.commentCount || video.comments),
             isRecent: true,
             recordedAt: new Date()
           });

@@ -80,5 +80,5 @@ module.exports = {
   removeToken,
   removeUserTokens,
   getStoreSize,
-  clearStore
+  clearStore,
 }; 
