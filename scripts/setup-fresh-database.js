@@ -3,263 +3,133 @@ const {
   User,
   YouTubeChannel,
   ChannelStatistics,
-  ChannelVideo,
-  ChannelSocialLink,
-  ChannelAnalysis
+  ChannelViolation,
+  Video,
+  VideoStatistics,
+  AccessToken,
+  UserSchedule
 } = require('../models');
 
 async function setupFreshDatabase() {
   try {
     console.log('🚀 Bắt đầu setup database mới từ đầu...');
-    
+
     // 1. Sync tất cả models để tạo bảng
     console.log('\n1. Tạo tất cả bảng...');
     await sequelize.sync({ force: true });
     console.log('✅ Tất cả bảng đã được tạo thành công');
-    
+
     // 2. Tạo tài khoản admin
     console.log('\n2. Tạo tài khoản admin...');
     const adminUser = await User.create({
-      username: 'admin',
-      email: 'admin@youtube-manager.com',
-      password: 'admin123456', // Sẽ được hash tự động
-      fullName: 'System Administrator',
-      role: 'admin',
-      isActive: true
+      email: 'admin@gmail.com',
+      password_hash: 'admin123456', // Nên hash khi thực tế
+      full_name: 'System Administrator'
     });
-    console.log('✅ Tài khoản admin đã được tạo:');
-    console.log(`   👤 Username: ${adminUser.username}`);
-    console.log(`   📧 Email: ${adminUser.email}`);
-    console.log(`   🔑 Password: admin123456`);
-    console.log(`   👑 Role: ${adminUser.role}`);
-    console.log('⚠️  Vui lòng đổi password sau khi đăng nhập!');
-    
+    console.log('✅ Tài khoản admin đã được tạo:', adminUser.email);
+
     // 3. Tạo tài khoản user demo
     console.log('\n3. Tạo tài khoản user demo...');
     const demoUser = await User.create({
-      username: 'demo',
-      email: 'demo@youtube-manager.com',
-      password: 'demo123456',
-      fullName: 'Demo User',
-      role: 'user',
-      isActive: true
+      email: 'user1@gmail.com',
+      password_hash: 'user123456',
+      full_name: 'User 1'
     });
-    console.log('✅ Tài khoản demo đã được tạo:');
-    console.log(`   👤 Username: ${demoUser.username}`);
-    console.log(`   📧 Email: ${demoUser.email}`);
-    console.log(`   🔑 Password: demo123456`);
-    console.log(`   👤 Role: ${demoUser.role}`);
-    
-    // 4. Tạo channel demo để test
-    console.log('\n4. Tạo channel demo để test...');
+    console.log('✅ Tài khoản demo đã được tạo:', demoUser.email);
+
+    // 4. Tạo user_schedule cho demo user
+    await UserSchedule.create({
+      user_id: demoUser.id,
+      time_of_day: '08:00:00',
+      is_active: true
+    });
+    console.log('✅ User schedule đã được tạo');
+
+    // 5. Tạo channel demo
     const demoChannel = await YouTubeChannel.create({
-      userId: demoUser.id,
-      channelName: 'Demo Tech Channel',
-      description: 'A demo channel for testing the new database structure',
-      category: 'Technology',
-      joinDate: '2020-01-01',
-      location: 'United States',
-      imageUrl: 'https://example.com/demo-channel.jpg',
-      analysisStatus: 'completed',
-      analyzedBy: adminUser.id
+      user_id: demoUser.id,
+      channel_id: 'UC1234567890',
+      channel_title: 'Demo Tech Channel',
+      channel_description: 'A demo channel for testing the new database structure',
+      channel_custom_url: 'demotech',
+      channel_country: 'US',
+      channel_thumbnail_url: 'https://example.com/demo-channel.jpg',
+      channel_creation_date: new Date('2020-01-01'),
+      is_verified: true,
+      is_monitized: true
     });
-    console.log('✅ Channel demo đã được tạo:', demoChannel.channelName);
-    
-    // 5. Tạo thống kê demo
-    console.log('\n5. Tạo thống kê demo...');
+    console.log('✅ Channel demo đã được tạo:', demoChannel.channel_title);
+
+    // 6. Tạo access token demo
+    await AccessToken.create({
+      user_id: demoUser.id,
+      channel_id: demoChannel.id,
+      access_token: 'ya29.a0AfH6SMBEXAMPLE',
+      refresh_token: '1//0gEXAMPLE',
+      scope: 'https://www.googleapis.com/auth/youtube.readonly',
+      expires_at: new Date(Date.now() + 3600 * 1000)
+    });
+    console.log('✅ Access token demo đã được tạo');
+
+    // 7. Tạo thống kê channel demo
     await ChannelStatistics.create({
-      channelId: demoChannel.id,
-      subscriberCount: '500K',
-      totalViews: '10M',
-      estimatedRevenue: '$2K/month',
-      watchTime: '100K hours',
-      views48h: '50K',
-      views60min: '5K',
-      recordedAt: new Date()
+      channel_id: demoChannel.id,
+      date: new Date('2024-06-01'),
+      subscriber_count: 500000,
+      view_count: 10000000,
+      like_count: 250000,
+      comment_count: 12000,
+      share_count: 3000,
+      watch_time_minutes: 100000,
+      estimated_revenue: 2000.5,
+      view_growth_percent: 2.5,
+      subscriber_growth_percent: 1.2
     });
-    console.log('✅ Thống kê demo đã được tạo');
-    
-    // 6. Tạo video demo
-    console.log('\n6. Tạo video demo...');
-    await ChannelVideo.create({
-      channelId: demoChannel.id,
-      videoId: 'demo_video_001',
+    console.log('✅ Channel statistics demo đã được tạo');
+
+    // 8. Tạo cảnh báo vi phạm demo
+    await ChannelViolation.create({
+      channel_id: demoChannel.id,
+      violation_type: 'community',
+      title: 'Community Guidelines Violation',
+      description: 'Vi phạm nguyên tắc cộng đồng do nội dung không phù hợp.',
+      status: 'active',
+      violation_date: new Date('2024-05-20'),
+      resolved_date: null
+    });
+    console.log('✅ Channel violation demo đã được tạo');
+
+    // 9. Tạo video demo
+    const demoVideo = await Video.create({
+      channel_id: demoChannel.id,
+      video_id: 'demo_video_001',
       title: 'How to Build a Web App',
       description: 'Learn how to build a modern web application',
-      thumbnailUrl: 'https://example.com/thumbnail1.jpg',
-      publishedAt: new Date('2024-01-15'),
+      published_at: new Date('2024-01-15'),
+      thumbnail_url: 'https://example.com/thumbnail1.jpg',
       duration: '15:30',
-      viewCount: 100000,
-      likeCount: 5000,
-      commentCount: 800,
-      isRecent: true,
-      recordedAt: new Date()
+      privacy_status: 'public'
     });
-    
-    await ChannelVideo.create({
-      channelId: demoChannel.id,
-      videoId: 'demo_video_002',
-      title: 'Database Design Best Practices',
-      description: 'Learn the best practices for database design',
-      thumbnailUrl: 'https://example.com/thumbnail2.jpg',
-      publishedAt: new Date('2024-01-10'),
-      duration: '12:45',
-      viewCount: 75000,
-      likeCount: 3500,
-      commentCount: 600,
-      isRecent: true,
-      recordedAt: new Date()
+    console.log('✅ Video demo đã được tạo:', demoVideo.title);
+
+    // 10. Tạo video statistics demo
+    await VideoStatistics.create({
+      video_id: demoVideo.id,
+      date: new Date('2024-06-01'),
+      view_count: 100000,
+      like_count: 5000,
+      comment_count: 800,
+      share_count: 200,
+      estimated_revenue: 120.5
     });
-    console.log('✅ Videos demo đã được tạo');
-    
-    // 7. Tạo social links demo
-    console.log('\n7. Tạo social links demo...');
-    await ChannelSocialLink.create({
-      channelId: demoChannel.id,
-      platform: 'facebook',
-      url: 'https://facebook.com/demotechchannel',
-      displayName: 'Demo Tech Channel',
-      isActive: true
-    });
-    
-    await ChannelSocialLink.create({
-      channelId: demoChannel.id,
-      platform: 'twitter',
-      url: 'https://twitter.com/demotechchannel',
-      displayName: '@demotechchannel',
-      isActive: true
-    });
-    
-    await ChannelSocialLink.create({
-      channelId: demoChannel.id,
-      platform: 'instagram',
-      url: 'https://instagram.com/demotechchannel',
-      displayName: 'demotechchannel',
-      isActive: true
-    });
-    console.log('✅ Social links demo đã được tạo');
-    
-    // 8. Tạo phân tích AI demo
-    console.log('\n8. Tạo phân tích AI demo...');
-    await ChannelAnalysis.create({
-      channelId: demoChannel.id,
-      analysisType: 'content_analysis',
-      analysisData: {
-        contentQuality: 'high',
-        engagementRate: '6.8%',
-        audienceDemographics: {
-          age: '18-34',
-          location: 'US, UK, Canada',
-          interests: ['Technology', 'Programming', 'Web Development']
-        },
-        contentThemes: ['Web Development', 'Programming', 'Tech Reviews'],
-        uploadFrequency: '2 videos/week',
-        averageVideoLength: '12 minutes'
-      },
-      summary: 'This is a high-quality technology channel with excellent engagement rates and consistent content delivery.',
-      confidence: 0.92,
-      analyzedAt: new Date(),
-      isLatest: true
-    });
-    console.log('✅ Phân tích AI demo đã được tạo');
-    
-    // 9. Test relationships
-    console.log('\n9. Testing relationships...');
-    const channelWithData = await YouTubeChannel.findOne({
-      where: { id: demoChannel.id },
-      include: [
-        {
-          model: User,
-          as: 'user',
-          attributes: ['username', 'fullName', 'role']
-        },
-        {
-          model: ChannelStatistics,
-          as: 'statistics',
-          order: [['recordedAt', 'DESC']],
-          limit: 1
-        },
-        {
-          model: ChannelVideo,
-          as: 'videos',
-          where: { isRecent: true }
-        },
-        {
-          model: ChannelSocialLink,
-          as: 'socialLinks',
-          where: { isActive: true }
-        },
-        {
-          model: ChannelAnalysis,
-          as: 'analyses',
-          where: { isLatest: true }
-        }
-      ]
-    });
-    
-    console.log('✅ Relationships test thành công!');
-    console.log('📊 Dữ liệu demo:');
-    console.log(`   - Channel: ${channelWithData.channelName}`);
-    console.log(`   - Owner: ${channelWithData.user.username} (${channelWithData.user.role})`);
-    console.log(`   - Statistics: ${channelWithData.statistics.length} record`);
-    console.log(`   - Videos: ${channelWithData.videos.length} recent videos`);
-    console.log(`   - Social Links: ${channelWithData.socialLinks.length} active links`);
-    console.log(`   - AI Analysis: ${channelWithData.analyses.length} latest analysis`);
-    
-    // 10. Hiển thị thông tin đăng nhập
-    console.log('\n🎉 Setup hoàn thành thành công!');
-    console.log('\n📋 THÔNG TIN ĐĂNG NHẬP:');
-    console.log('=====================================');
-    console.log('👑 ADMIN ACCOUNT:');
-    console.log(`   Username: admin`);
-    console.log(`   Email: admin@youtube-manager.com`);
-    console.log(`   Password: admin123456`);
-    console.log(`   Role: admin`);
-    console.log('');
-    console.log('👤 DEMO USER ACCOUNT:');
-    console.log(`   Username: demo`);
-    console.log(`   Email: demo@youtube-manager.com`);
-    console.log(`   Password: demo123456`);
-    console.log(`   Role: user`);
-    console.log('=====================================');
-    console.log('\n⚠️  LƯU Ý: Vui lòng đổi password sau khi đăng nhập!');
-    console.log('\n🚀 Bạn có thể bắt đầu sử dụng hệ thống ngay bây giờ!');
-    
-    return {
-      success: true,
-      adminUser: {
-        username: adminUser.username,
-        email: adminUser.email,
-        role: adminUser.role
-      },
-      demoUser: {
-        username: demoUser.username,
-        email: demoUser.email,
-        role: demoUser.role
-      },
-      demoChannel: {
-        id: demoChannel.id,
-        name: demoChannel.channelName
-      }
-    };
-    
+    console.log('✅ Video statistics demo đã được tạo');
+
+    console.log('\n🎉 Database setup hoàn tất!');
   } catch (error) {
-    console.error('❌ Setup database thất bại:', error);
-    throw error;
+    console.error('❌ Lỗi khi setup database:', error);
+  } finally {
+    await sequelize.close();
   }
 }
 
-// Chạy setup nếu file được execute trực tiếp
-if (require.main === module) {
-  setupFreshDatabase()
-    .then((result) => {
-      console.log('\n✅ Setup completed successfully!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Setup failed:', error);
-      process.exit(1);
-    });
-}
-
-module.exports = { setupFreshDatabase }; 
+setupFreshDatabase(); 

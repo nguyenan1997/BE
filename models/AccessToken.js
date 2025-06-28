@@ -1,67 +1,53 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const YouTubeChannel = sequelize.define('YouTubeChannel', {
+const AccessToken = sequelize.define('AccessToken', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  userId: {
+  user_id: {
     type: DataTypes.UUID,
     allowNull: false,
-    field: 'user_id',
     references: {
       model: 'users',
       key: 'id'
     }
   },
   channel_id: {
-    type: DataTypes.STRING,
+    type: DataTypes.UUID,
     allowNull: false,
-    unique: true
+    references: {
+      model: 'youtube_channels',
+      key: 'id'
+    }
   },
-  channel_title: {
-    type: DataTypes.STRING,
+  access_token: {
+    type: DataTypes.TEXT,
     allowNull: false
   },
-  channel_description: {
+  refresh_token: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  channel_custom_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  channel_country: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  channel_thumbnail_url: {
+  scope: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  channel_creation_date: {
+  expires_at: {
     type: DataTypes.DATE,
-    allowNull: true
-  },
-  is_verified: {
-    type: DataTypes.BOOLEAN,
-    allowNull: true
-  },
-  is_monitized: {
-    type: DataTypes.BOOLEAN,
     allowNull: true
   }
 }, {
-  tableName: 'youtube_channels',
+  tableName: 'access_tokens',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  updatedAt: false,
   indexes: [
     { fields: ['user_id'] },
     { fields: ['channel_id'] }
   ]
 });
 
-module.exports = YouTubeChannel; 
+module.exports = AccessToken; 
