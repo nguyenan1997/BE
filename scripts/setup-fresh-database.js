@@ -22,18 +22,22 @@ async function setupFreshDatabase() {
     // 2. Tạo tài khoản admin
     console.log('\n2. Tạo tài khoản admin...');
     const adminUser = await User.create({
+      username: 'admin',
       email: 'admin@gmail.com',
-      password_hash: 'admin123456', // Nên hash khi thực tế
-      full_name: 'System Administrator'
+      password: 'admin123456', // Sẽ được hash tự động
+      fullName: 'System Administrator',
+      role: 'admin'
     });
     console.log('✅ Tài khoản admin đã được tạo:', adminUser.email);
 
     // 3. Tạo tài khoản user demo
     console.log('\n3. Tạo tài khoản user demo...');
     const demoUser = await User.create({
+      username: 'user1',
       email: 'user1@gmail.com',
-      password_hash: 'user123456',
-      full_name: 'User 1'
+      password: 'user123456', // Sẽ được hash tự động
+      fullName: 'User 1',
+      role: 'user'
     });
     console.log('✅ Tài khoản demo đã được tạo:', demoUser.email);
 
@@ -47,7 +51,7 @@ async function setupFreshDatabase() {
 
     // 5. Tạo channel demo
     const demoChannel = await YouTubeChannel.create({
-      user_id: demoUser.id,
+      userId: demoUser.id,
       channel_id: 'UC1234567890',
       channel_title: 'Demo Tech Channel',
       channel_description: 'A demo channel for testing the new database structure',
