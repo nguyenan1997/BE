@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { generateAuthUrl, exchangeCodeForTokens } = require('../config/youtube');
 
 // Demo script to test YouTube OAuth2 flow
