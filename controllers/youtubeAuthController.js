@@ -91,7 +91,6 @@ const handleCallback = async (req, res) => {
       });
       if (channelRes.data.items && channelRes.data.items.length > 0) {
         channelId = channelRes.data.items[0].id;
-        console.log("Channel ID: ", channelId);
         // Lấy thêm thông tin channel
         const snippet = channelRes.data.items[0].snippet;
         // Tìm hoặc tạo YouTubeChannel
