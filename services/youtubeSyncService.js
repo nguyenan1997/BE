@@ -20,7 +20,7 @@ async function syncYouTubeChannelData({ userId, channelId, accessToken = null })
   // Lấy access token từ database nếu không cung cấp
   if (!accessToken) {
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     if (!tokenRecord) {
@@ -215,7 +215,7 @@ async function syncYouTubeChannelData({ userId, channelId, accessToken = null })
 async function syncRevenueData({ userId, channelId = null, videoId = null, startDate, endDate }) {
   // Lấy access token
   const tokenRecord = await AccessToken.findOne({
-    where: { userId: userId, isActive: true }
+    where: { user_id: userId, is_active: true }
   });
 
   if (!tokenRecord) {

@@ -130,6 +130,7 @@ users (1) ────┐
 | `access_token` | TEXT | ✅ | Access token cho YouTube API |
 | `refresh_token` | TEXT | ✅ | Refresh token để làm mới access token |
 | `scope` | TEXT | ✅ | Phạm vi quyền truy cập |
+| `is_active` | BOOLEAN | ✅ | Kiểm tra xem đây có phải token còn hoạt động hay không |
 | `expires_at` | TIMESTAMP | ✅ | Thời gian hết hạn access token |
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo token |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |

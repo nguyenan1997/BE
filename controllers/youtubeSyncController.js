@@ -163,7 +163,7 @@ const getSyncStatus = async (req, res) => {
     
     // Kiểm tra authorization status
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     const authStatus = {
@@ -181,6 +181,7 @@ const getSyncStatus = async (req, res) => {
     const videoCount = await Video.count({
       include: [{
         model: YouTubeChannel,
+        as: 'youtube_channel',
         where: { user_id: userId }
       }]
     });
@@ -188,6 +189,7 @@ const getSyncStatus = async (req, res) => {
     const latestChannelStats = await ChannelStatistics.findOne({
       include: [{
         model: YouTubeChannel,
+        as: 'youtube_channel',
         where: { user_id: userId }
       }],
       order: [['date', 'DESC']]
@@ -196,8 +198,10 @@ const getSyncStatus = async (req, res) => {
     const latestVideoStats = await VideoStatistics.findOne({
       include: [{
         model: Video,
+        as: 'video',
         include: [{
           model: YouTubeChannel,
+          as: 'youtube_channel',
           where: { user_id: userId }
         }]
       }],

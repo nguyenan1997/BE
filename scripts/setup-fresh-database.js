@@ -40,6 +40,7 @@ async function setupFreshDatabase() {
       role: 'user'
     });
     console.log('✅ Tài khoản demo đã được tạo:', demoUser.email);
+    console.log('Demo user UUID:', demoUser.id);
 
     // 4. Tạo user_schedule cho demo user
     await UserSchedule.create({

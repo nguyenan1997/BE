@@ -9,7 +9,10 @@ const testOAuth2Flow = async () => {
   try {
     // Step 1: Generate authorization URL
     console.log('1️⃣ Generating authorization URL...');
-    const authUrl = generateAuthUrl('test-state');
+    // Lấy userId từ biến môi trường hoặc argv hoặc hardcode demo
+    const userId = process.env.TEST_USER_ID || process.argv[3] || '03f9c6c8-6385-48ad-b8d8-35c65890777c';
+    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
+    const authUrl = generateAuthUrl(state);
     console.log('✅ Authorization URL generated:');
     console.log(authUrl);
     console.log('\n📝 Instructions:');

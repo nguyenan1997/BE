@@ -6,7 +6,7 @@ const getChannelRevenue = async (userId, channelId, startDate, endDate) => {
   try {
     // Get user's access token
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     if (!tokenRecord) {
@@ -75,7 +75,7 @@ const getVideoRevenue = async (userId, videoId, startDate, endDate) => {
   try {
     // Get user's access token
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     if (!tokenRecord) {
@@ -144,7 +144,7 @@ const getAggregatedRevenue = async (userId, ids, startDate, endDate, groupBy = '
   try {
     // Get user's access token
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     if (!tokenRecord) {

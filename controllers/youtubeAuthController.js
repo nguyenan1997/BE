@@ -1,5 +1,5 @@
 const { generateAuthUrl, exchangeCodeForTokens, refreshAccessToken } = require('../config/youtube');
-const { AccessToken } = require('../models');
+const { AccessToken, YouTubeChannel } = require('../models');
 const jwt = require('jsonwebtoken');
 
 // Generate OAuth2 authorization URL
@@ -81,9 +81,54 @@ const handleCallback = async (req, res) => {
 
     const { tokens } = tokenResult;
 
+    // Lấy channel_id từ YouTube API
+    let channelId = null;
+    try {
+      const axios = require('axios');
+      const channelRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+        params: { part: 'id,snippet', mine: true },
+        headers: { Authorization: `Bearer ${tokens.access_token}` }
+      });
+      if (channelRes.data.items && channelRes.data.items.length > 0) {
+        channelId = channelRes.data.items[0].id;
+        console.log("Channel ID: ", channelId);
+        // Lấy thêm thông tin channel
+        const snippet = channelRes.data.items[0].snippet;
+        // Tìm hoặc tạo YouTubeChannel
+        let channelRecord = await YouTubeChannel.findOne({ where: { channel_id: channelId } });
+        if (!channelRecord) {
+          channelRecord = await YouTubeChannel.create({
+            channel_id: channelId,
+            userId: userId,
+            channel_title: snippet?.title || '',
+            channel_description: snippet?.description || '',
+            channel_custom_url: snippet?.customUrl || null,
+            channel_country: snippet?.country || null,
+            channel_thumbnail_url: snippet?.thumbnails?.default?.url || null,
+            channel_creation_date: snippet?.publishedAt || null,
+            is_verified: null,
+            is_monitized: null
+          });
+        }
+        // Lấy UUID nội bộ
+        channelId = channelRecord.id;
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to fetch channel_id from YouTube API'
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to fetch channel_id from YouTube API',
+        error: err.message
+      });
+    }
+
     // Check if user already has an access token
     const existingToken = await AccessToken.findOne({
-      where: { userId: userId }
+      where: { user_id: userId, is_active: true, channel_id: channelId }
     });
 
     if (existingToken) {
@@ -94,18 +139,19 @@ const handleCallback = async (req, res) => {
         scope: tokens.scope,
         tokenType: tokens.token_type,
         expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-        isActive: true
+        is_active: true
       });
     } else {
       // Create new token record
       await AccessToken.create({
-        userId: userId,
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
+        user_id: userId,
+        channel_id: channelId,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
         scope: tokens.scope,
         tokenType: tokens.token_type,
-        expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-        isActive: true
+        expires_at: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+        is_active: true
       });
     }
 
@@ -147,7 +193,7 @@ const refreshToken = async (req, res) => {
 
     // Get user's refresh token
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     if (!tokenRecord || !tokenRecord.refreshToken) {
@@ -208,7 +254,7 @@ const getAuthStatus = async (req, res) => {
     }
 
     const tokenRecord = await AccessToken.findOne({
-      where: { userId: userId, isActive: true }
+      where: { user_id: userId, is_active: true }
     });
 
     if (!tokenRecord) {
@@ -256,8 +302,8 @@ const revokeAuth = async (req, res) => {
 
     // Deactivate all tokens for user
     await AccessToken.update(
-      { isActive: false },
-      { where: { userId: userId } }
+      { is_active: false },
+      { where: { user_id: userId } }
     );
 
     res.json({

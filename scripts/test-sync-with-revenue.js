@@ -63,6 +63,7 @@ const testSyncWithRevenue = async () => {
       const video = await Video.findOne({
         include: [{
           model: require('../models').YouTubeChannel,
+          as: 'youtube_channel',
           where: { user_id: userId }
         }],
         limit: 1

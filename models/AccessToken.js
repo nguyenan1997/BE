@@ -38,6 +38,10 @@ const AccessToken = sequelize.define('AccessToken', {
   expires_at: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  is_active: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
   }
 }, {
   tableName: 'access_tokens',
