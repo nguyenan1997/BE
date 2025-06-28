@@ -13,8 +13,9 @@ const { sequelize } = require('./config/database');
 require('./models/index');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
-const youtubeRoutes = require('./routes/youtubeRoutes');
-const scheduleRoutes = require('./routes/scheduleRoutes');
+const youtubeAuthRoutes = require('./routes/youtubeAuthRoutes');
+const youtubeAnalyticsRoutes = require('./routes/youtubeAnalyticsRoutes');
+const youtubeSyncRoutes = require('./routes/youtubeSyncRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -52,8 +53,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/youtube', youtubeRoutes);
-app.use('/api/schedules', scheduleRoutes);
+app.use('/api/youtube-auth', youtubeAuthRoutes);
+app.use('/api/youtube-analytics', youtubeAnalyticsRoutes);
+app.use('/api/youtube-sync', youtubeSyncRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -87,11 +89,6 @@ const startServer = async () => {
       await sequelize.sync({ alter: true });
       console.log('✅ Database synchronized.');
     }
-    
-    // Khởi tạo schedules
-    const { initializeSchedules } = require('./controllers/scheduleController');
-    await initializeSchedules();
-    console.log('✅ Schedules initialized.');
     
     app.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
