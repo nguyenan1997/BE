@@ -1,30 +1,28 @@
 const express = require('express');
 const router = express.Router();
 const { 
-  getAuthUrl, 
-  handleCallback, 
+  getAuthUrl,  
   refreshToken, 
   getAuthStatus, 
   revokeAuth,
   handleCallbackAndSync
 } = require('../controllers/youtubeAuthController');
-const { exchangeCodeForTokens } = require('../config/youtube');
-const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 const { User } = require('../models');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 // Generate OAuth2 authorization URL
-router.post('/auth-url', getAuthUrl);
+router.post('/auth-url', authenticateToken, getAuthUrl);
 
 // Handle OAuth2 callback (GET request from YouTube)
 router.get('/callback', handleCallbackAndSync);
 
 // Refresh access token
-router.post('/refresh', refreshToken);
+router.post('/refresh', authenticateToken, refreshToken);
 
 // Get user's YouTube authorization status
-router.get('/status/:userId', getAuthStatus);
+router.get('/status', authenticateToken, getAuthStatus);
 
 // Revoke YouTube authorization
-router.delete('/revoke/:userId', revokeAuth);
+router.delete('/revoke', authenticateToken, revokeAuth);
 
 module.exports = router; 

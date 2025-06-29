@@ -111,7 +111,6 @@ async function syncYouTubeChannelData({ userId, channelId, accessToken = null, r
       });
     }
   }
-  // --- End update/create AccessToken ---
 
   // 3. Lấy revenue data cho kênh (30 ngày gần nhất)
   let channelRevenue = null;

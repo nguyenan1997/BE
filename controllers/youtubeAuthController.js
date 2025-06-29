@@ -6,15 +6,8 @@ const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = req.currentUser.userId;
     
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required'
-      });
-    }
-
     // Generate state parameter to include user ID
     const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
     
@@ -37,164 +30,10 @@ const getAuthUrl = async (req, res) => {
   }
 };
 
-// Handle OAuth2 callback
-const handleCallback = async (req, res) => {
-  try {
-    const { code, state, error } = req.query;
-    
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Authorization failed',
-        error: error
-      });
-    }
-    
-    if (!code) {
-      return res.status(400).json({
-        success: false,
-        message: 'Authorization code is required'
-      });
-    }
-
-    // Decode state parameter to get user ID
-    let userId;
-    try {
-      const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-      userId = stateData.userId;
-    } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid state parameter'
-      });
-    }
-
-    if (!userId) {
-      throw new Error('Missing userId in OAuth state');
-    }
-
-    // Exchange authorization code for tokens
-    const tokenResult = await exchangeCodeForTokens(code);
-    
-    if (!tokenResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to exchange code for tokens',
-        error: tokenResult.error
-      });
-    }
-
-    const { tokens } = tokenResult;
-
-    // Lấy channel_id từ YouTube API
-    let channelId = null;
-    try {
-      const axios = require('axios');
-      const channelRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
-        params: { part: 'id,snippet', mine: true },
-        headers: { Authorization: `Bearer ${tokens.access_token}` }
-      });
-      if (channelRes.data.items && channelRes.data.items.length > 0) {
-        channelId = channelRes.data.items[0].id;
-        // Lấy thêm thông tin channel
-        const snippet = channelRes.data.items[0].snippet;
-        // Tìm hoặc tạo YouTubeChannel
-        let channelRecord = await YouTubeChannel.findOne({ where: { channel_id: channelId } });
-        if (!channelRecord) {
-          channelRecord = await YouTubeChannel.create({
-            channel_id: channelId,
-            userId: userId,
-            channel_title: snippet?.title || '',
-            channel_description: snippet?.description || '',
-            channel_custom_url: snippet?.customUrl || null,
-            channel_country: snippet?.country || null,
-            channel_thumbnail_url: snippet?.thumbnails?.default?.url || null,
-            channel_creation_date: snippet?.publishedAt || null,
-            is_verified: null,
-            is_monitized: null
-          });
-        }
-        // Lấy UUID nội bộ
-        channelId = channelRecord.id;
-      } else {
-        return res.status(400).json({
-          success: false,
-          message: 'Failed to fetch channel_id from YouTube API'
-        });
-      }
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to fetch channel_id from YouTube API',
-        error: err.message
-      });
-    }
-
-    // Check if user already has an access token
-    const existingToken = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true, channel_db_id: channelId }
-    });
-
-    if (existingToken) {
-      // Update existing token
-      await AccessToken.update(
-        {
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-          scope: tokens.scope,
-          expires_at: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-          is_active: true
-        },
-        { where: { id: existingToken.id } }
-      );
-    } else {
-      // Create new token record
-      await AccessToken.create({
-        user_id: userId,
-        channel_db_id: channelId,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        scope: tokens.scope,
-        expires_at: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-        is_active: true
-      });
-    }
-
-    // Generate JWT token for frontend
-    const jwtToken = jwt.sign(
-      { userId: userId },
-      process.env.JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.json({
-      success: true,
-      message: 'YouTube authorization successful',
-      token: jwtToken,
-      hasAnalyticsAccess: tokens.scope.includes('yt-analytics-monetary.readonly')
-    });
-    
-  } catch (error) {
-    console.error('Error handling OAuth callback:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to complete authorization',
-      error: error.message
-    });
-  }
-};
-
 // Refresh access token
 const refreshToken = async (req, res) => {
   try {
-    const { userId } = req.body;
-    
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required'
-      });
-    }
+    const userId = req.currentUser.userId;
 
     // Get user's refresh token
     const tokenRecord = await AccessToken.findOne({
@@ -249,14 +88,7 @@ const refreshToken = async (req, res) => {
 // Get user's YouTube authorization status
 const getAuthStatus = async (req, res) => {
   try {
-    const { userId } = req.params;
-    
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required'
-      });
-    }
+    const userId = req.currentUser.userId;
 
     const tokenRecord = await AccessToken.findOne({
       where: { user_id: userId, is_active: true }
@@ -296,14 +128,7 @@ const getAuthStatus = async (req, res) => {
 // Revoke YouTube authorization
 const revokeAuth = async (req, res) => {
   try {
-    const { userId } = req.params;
-    
-    if (!userId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID is required'
-      });
-    }
+    const userId = req.currentUser.userId;
 
     // Deactivate all tokens for user
     await AccessToken.update(
@@ -386,7 +211,6 @@ const handleCallbackAndSync = async (req, res) => {
 
 module.exports = {
   getAuthUrl,
-  handleCallback,
   refreshToken,
   getAuthStatus,
   revokeAuth,

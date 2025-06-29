@@ -1,11 +1,11 @@
 openapi: 3.0.0
 info:
-  title: YouTube Channel Analysis API
+  title: YouTube Manager API
   version: 1.0.0
-  description: API for analyzing YouTube channel screenshots using Google Gemini AI
+  description: OpenAPI spec for YouTube Manager backend (phân nhóm endpoint rõ ràng)
 servers:
   - url: http://localhost:3000
-    description: Development server
+    description: Local server
 components:
   securitySchemes:
     bearerAuth:
@@ -13,252 +13,66 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
-    User:
+    LoginRequest:
       type: object
+      required:
+        - email
+        - password
       properties:
-        id:
-          type: string
-          format: uuid
-        username:
-          type: string
         email:
           type: string
           format: email
+          example: "user@example.com"
+        password:
+          type: string
+          example: "password123"
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+        - fullName
+      properties:
+        email:
+          type: string
+          format: email
+          example: "newuser@example.com"
+        password:
+          type: string
+          example: "password123"
         fullName:
           type: string
-        role:
-          type: string
-          enum: [user, admin]
-        isActive:
-          type: boolean
-        lastLoginAt:
-          type: string
-          format: date-time
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    YouTubeChannel:
+          example: "John Doe"
+    SyncRevenueRequest:
       type: object
+      required:
+        - startDate
+        - endDate
       properties:
-        id:
+        startDate:
           type: string
-          format: uuid
-        userId:
+          format: date
+          example: "2024-01-01"
+        endDate:
           type: string
-          format: uuid
-        channelName:
-          type: string
-        subscriberCount:
-          type: string
-        totalViews:
-          type: string
-        estimatedRevenue:
-          type: string
-        watchTime:
-          type: string
-        views48h:
-          type: string
-        views60min:
-          type: string
-        recentVideos:
-          type: array
-          items:
-            type: object
-            properties:
-              title:
-                type: string
-              views:
-                type: string
-              likes:
-                type: string
-              comments:
-                type: string
-        description:
-          type: string
-        category:
-          type: string
-        joinDate:
-          type: string
-        location:
-          type: string
-        socialLinks:
-          type: object
-          description: Social media links as JSON object
-        aiAnalysis:
-          type: object
-        imageUrl:
-          type: string
-        originalImageName:
-          type: string
-        analysisStatus:
-          type: string
-          enum: [pending, processing, completed, failed]
-        analysisError:
-          type: string
-        monetizationWarning:
-          type: boolean
-        monetizationWarningReason:
-          type: string
-        monetizationWarningDate:
-          type: string
-          format: date-time
-        communityGuidelinesWarning:
-          type: boolean
-        communityGuidelinesWarningReason:
-          type: string
-        communityGuidelinesWarningDate:
-          type: string
-          format: date-time
-        warnings:
-          type: object
-        analyzedBy:
-          type: string
-          format: uuid
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    Schedule:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        userId:
-          type: string
-          format: uuid
+          format: date
+          example: "2024-01-31"
         channelId:
           type: string
-          format: uuid
-        name:
+          example: "UC123456789"
+        videoId:
           type: string
-        description:
-          type: string
-        cronExpression:
-          type: string
-        isActive:
-          type: boolean
-        lastRunAt:
-          type: string
-          format: date-time
-        nextRunAt:
-          type: string
-          format: date-time
-        runCount:
-          type: integer
-        maxRuns:
-          type: integer
-          nullable: true
-        settings:
-          type: object
-        channel:
-          $ref: '#/components/schemas/YouTubeChannel'
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-    ScheduleCreate:
-      type: object
-      required: [channelId, name, scheduleType, time]
-      properties:
-        channelId:
-          type: string
-          format: uuid
-          example: "123e4567-e89b-12d3-a456-426614174000"
-        name:
-          type: string
-          example: "Daily Analysis"
-        description:
-          type: string
-          example: "Analyze channel every day at 9 AM"
-        scheduleType:
-          type: string
-          enum: [minutely, hourly, daily, weekly, monthly, yearly]
-          example: "daily"
-        time:
-          type: object
-          properties:
-            hour:
-              type: integer
-              minimum: 0
-              maximum: 23
-              example: 9
-            minute:
-              type: integer
-              minimum: 0
-              maximum: 59
-              example: 0
-            dayOfWeek:
-              type: integer
-              minimum: 0
-              maximum: 6
-              example: 1
-            dayOfMonth:
-              type: integer
-              minimum: 1
-              maximum: 31
-              example: 1
-            month:
-              type: integer
-              minimum: 1
-              maximum: 12
-              example: 1
-        maxRuns:
-          type: integer
-          minimum: 1
-          maximum: 1000
-          example: 30
-        settings:
-          type: object
-    ScheduleUpdate:
+          example: "dQw4w9WgXcQ"
+    SuccessResponse:
       type: object
       properties:
-        name:
-          type: string
-          example: "Updated Daily Analysis"
-        description:
-          type: string
-          example: "Updated description"
-        cronExpression:
-          type: string
-          example: "0 10 * * *"
-        isActive:
+        success:
           type: boolean
           example: true
-        maxRuns:
-          type: integer
-          minimum: 1
-          maximum: 1000
-          example: 20
-        settings:
-          type: object
-    Pagination:
-      type: object
-      properties:
-        page:
-          type: integer
-          description: Current page number
-          example: 1
-        limit:
-          type: integer
-          description: Number of items per page
-          example: 10
-        total:
-          type: integer
-          description: Total number of items
-          example: 25
-        totalPages:
-          type: integer
-          description: Total number of pages
-          example: 3
-    Error:
+        message:
+          type: string
+          example: "Operation successful"
+    ErrorResponse:
       type: object
       properties:
         success:
@@ -266,62 +80,64 @@ components:
           example: false
         message:
           type: string
-        errors:
-          type: array
-          items:
-            type: string
+          example: "Error message"
         error:
           type: string
+          example: "Detailed error"
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: User Management
+    description: User management operations (admin only)
+  - name: YouTube OAuth
+    description: YouTube OAuth2 authentication and authorization
+  - name: YouTube Sync
+    description: YouTube data synchronization operations
+  - name: YouTube Analytics
+    description: YouTube analytics and revenue data
 paths:
-  /health:
-    get:
-      summary: Health check
-      description: Check if the server is running
-      tags: [🔓 Public]
-      responses:
-        200:
-          description: Server is running
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "OK"
-                  message:
-                    type: string
-                    example: "Server is running"
-                  timestamp:
-                    type: string
-                    format: date-time
-                  swagger:
-                    type: string
-                    example: "http://localhost:3000/api-docs"
 
-  /api/auth/login:
+  # ===== AUTHENTICATION =====
+  /api/auth/register:
     post:
-      summary: Login user
-      description: Authenticate user and get JWT token
-      tags: [👤 Authentication]
+      tags:
+        - Authentication
+      summary: Register new user (admin only)
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [email, password]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: "admin@example.com"
-                password:
-                  type: string
-                  example: "admin123"
+              $ref: '#/components/schemas/RegisterRequest'
       responses:
         200:
-          description: Login successful
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        200:
+          description: Login success
           content:
             application/json:
               schema:
@@ -330,33 +146,40 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  message:
+                  token:
                     type: string
-                    example: "Login successful"
-                  data:
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
                     type: object
                     properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-                      token:
+                      id:
+                        type: integer
+                        example: 1
+                      email:
                         type: string
+                        example: "user@example.com"
+                      fullName:
+                        type: string
+                        example: "John Doe"
+                      role:
+                        type: string
+                        example: "user"
         401:
           description: Invalid credentials
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/profile:
     get:
+      tags:
+        - Authentication
       summary: Get user profile
-      description: Get current user's profile information
-      tags: [👤 Authentication]
       security:
         - bearerAuth: []
       responses:
         200:
-          description: Profile retrieved successfully
+          description: User profile
           content:
             application/json:
               schema:
@@ -365,1318 +188,110 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  data:
+                  user:
                     type: object
                     properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+                      id:
+                        type: integer
+                        example: 1
+                      email:
+                        type: string
+                        example: "user@example.com"
+                      fullName:
+                        type: string
+                        example: "John Doe"
+                      role:
+                        type: string
+                        example: "user"
+                      isActive:
+                        type: boolean
+                        example: true
         401:
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/refresh-token:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh JWT token
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        401:
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/logout:
     post:
-      summary: Logout user
-      description: Logout current user session
-      tags: [👤 Authentication]
+      tags:
+        - Authentication
+      summary: Logout
       security:
         - bearerAuth: []
       responses:
         200:
-          description: Logout successful
+          description: Logout success
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Logout successful"
-        401:
-          description: Invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: '#/components/schemas/SuccessResponse'
   /api/auth/logout-all:
     post:
+      tags:
+        - Authentication
       summary: Logout all sessions
-      description: Logout user from all devices/sessions
-      tags: [👤 Authentication]
       security:
         - bearerAuth: []
       responses:
         200:
-          description: All sessions logged out successfully
+          description: Logout all success
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "All sessions logged out successfully"
-        401:
-          description: Invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                $ref: '#/components/schemas/SuccessResponse'
 
-  /api/auth/register:
-    post:
-      summary: Register new user (Admin Only)
-      description: Create a new user account (only admins can register new users)
-      tags: [🔒 Admin Only]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [username, email, password, fullName]
-              properties:
-                username:
-                  type: string
-                  minLength: 3
-                  maxLength: 50
-                  pattern: '^[a-zA-Z0-9_]+$'
-                  example: "john_doe"
-                email:
-                  type: string
-                  format: email
-                  example: "john@example.com"
-                password:
-                  type: string
-                  minLength: 6
-                  maxLength: 100
-                  example: "password123"
-                fullName:
-                  type: string
-                  maxLength: 100
-                  example: "John Doe"
-      responses:
-        201:
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "User registered successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        403:
-          description: Forbidden - Admin access required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/analyze:
-    post:
-      summary: Analyze YouTube channel from image URLs
-      description: Start AI analysis of YouTube channel from image URLs
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                imageUrls:
-                  type: array
-                  items:
-                    type: string
-                    format: uri
-                  description: Array of image URLs to analyze
-                  example:
-                    - "https://example.com/youtube-channel-main.jpg"
-                    - "https://example.com/youtube-channel-stats.jpg"
-      responses:
-        202:
-          description: Analysis started successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Images fetched and analysis started"
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      status:
-                        type: string
-                        example: "processing"
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/analyze-url:
-    post:
-      summary: Analyze YouTube channel from URL
-      description: Analyze YouTube channel by providing channel URL
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [channelUrl]
-              properties:
-                channelUrl:
-                  type: string
-                  format: uri
-                  description: YouTube channel URL
-                  example: "https://www.youtube.com/@PewDiePie"
-      responses:
-        202:
-          description: Channel analysis started successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Channel analysis started"
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      status:
-                        type: string
-                        example: "processing"
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/status/{id}:
-    get:
-      summary: Get analysis status
-      description: Check the status of a YouTube channel analysis
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Analysis ID
-      responses:
-        200:
-          description: Status retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: string
-                        format: uuid
-                      status:
-                        type: string
-                        enum: [pending, processing, completed, failed]
-                      channelName:
-                        type: string
-                      imageUrl:
-                        type: string
-                      error:
-                        type: string
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Analysis not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/result/{id}:
-    get:
-      summary: Get analysis results
-      description: Get completed analysis results for a YouTube channel
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Analysis ID
-      responses:
-        200:
-          description: Results retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    $ref: '#/components/schemas/YouTubeChannel'
-        400:
-          description: Analysis not completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  message:
-                    type: string
-                    example: "Analysis is processing. Please wait."
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Analysis not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels:
-    get:
-      summary: Get user's YouTube channels
-      description: Get list of all YouTube channel analyses for the authenticated user
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: page
-          in: query
-          description: Page number
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          description: Items per page
-          required: false
-          schema:
-            type: integer
-            default: 10
-      responses:
-        200:
-          description: Channels retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      channels:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uuid
-                            channelName:
-                              type: string
-                            analysisStatus:
-                              type: string
-                              enum: [pending, processing, completed, failed]
-                            imageUrl:
-                              type: string
-                            createdAt:
-                              type: string
-                              format: date-time
-                      pagination:
-                        type: object
-                        properties:
-                          currentPage:
-                            type: integer
-                          totalPages:
-                            type: integer
-                          totalItems:
-                            type: integer
-                          itemsPerPage:
-                            type: integer
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    post:
-      summary: Add YouTube channel manually
-      description: Add a new YouTube channel without AI analysis (manual entry)
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [channelName]
-              properties:
-                channelName:
-                  type: string
-                  description: Name of the YouTube channel
-                  example: "PewDiePie"
-                subscriberCount:
-                  type: string
-                  description: Number of subscribers
-                  example: "111M"
-                totalViews:
-                  type: string
-                  description: Total views on the channel
-                  example: "28.5B"
-                estimatedRevenue:
-                  type: string
-                  description: Estimated monthly revenue
-                  example: "$50K - $100K"
-                watchTime:
-                  type: string
-                  description: Total watch time
-                  example: "2.5B hours"
-                views48h:
-                  type: string
-                  description: Views in last 48 hours
-                  example: "500K"
-                views60min:
-                  type: string
-                  description: Views in last 60 minutes
-                  example: "10K"
-                description:
-                  type: string
-                  description: Channel description
-                  example: "Gaming and entertainment channel"
-                category:
-                  type: string
-                  description: Channel category
-                  example: "Gaming"
-                joinDate:
-                  type: string
-                  description: When the channel was created
-                  example: "Apr 29, 2010"
-                location:
-                  type: string
-                  description: Channel location
-                  example: "United States"
-                socialLinks:
-                  type: object
-                  description: Social media links as JSON object
-                  example:
-                    twitter: "https://twitter.com/pewdiepie"
-                    instagram: "https://instagram.com/pewdiepie"
-                imageUrl:
-                  type: string
-                  description: Channel banner or profile image URL
-                  example: "https://example.com/channel-image.jpg"
-                monetizationWarning:
-                  type: boolean
-                  description: Whether channel has monetization warnings
-                  example: false
-                monetizationWarningReason:
-                  type: string
-                  description: Reason for monetization warning
-                  example: ""
-                communityGuidelinesWarning:
-                  type: boolean
-                  description: Whether channel has community guidelines warnings
-                  example: false
-                communityGuidelinesWarningReason:
-                  type: string
-                  description: Reason for community guidelines warning
-                  example: ""
-      responses:
-        201:
-          description: Channel added successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "YouTube channel added successfully"
-                  data:
-                    $ref: '#/components/schemas/YouTubeChannel'
-        400:
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels/{id}:
-    delete:
-      summary: Delete YouTube channel analysis
-      description: Delete a YouTube channel analysis and associated files
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Analysis ID
-      responses:
-        200:
-          description: Analysis deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "YouTube channel deleted successfully"
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Analysis not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels/{id}/warnings:
-    get:
-      summary: Get channel warnings
-      description: Get all warnings for a channel with status and notes
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Channel ID
-        - name: status
-          in: query
-          description: Filter by warning status
-          required: false
-          schema:
-            type: string
-            enum: [unread, read, processing, resolved, ignored]
-        - name: active
-          in: query
-          description: Filter by active status
-          required: false
-          schema:
-            type: boolean
-      responses:
-        200:
-          description: Warnings retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      channelId:
-                        type: string
-                        format: uuid
-                      channelName:
-                        type: string
-                      warnings:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uuid
-                            warningType:
-                              type: string
-                              enum: [monetization, community_guidelines, copyright, other]
-                            status:
-                              type: string
-                              enum: [unread, read, processing, resolved, ignored]
-                            reason:
-                              type: string
-                            severity:
-                              type: string
-                              enum: [low, medium, high, critical]
-                            warningDate:
-                              type: string
-                              format: date-time
-                            processedAt:
-                              type: string
-                              format: date-time
-                            notes:
-                              type: array
-                              items:
-                                type: object
-                                properties:
-                                  id:
-                                    type: string
-                                  content:
-                                    type: string
-                                  addedBy:
-                                    type: string
-                                    format: uuid
-                                  addedAt:
-                                    type: string
-                                    format: date-time
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Channel not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels/{id}/warnings/{warningId}/status:
-    patch:
-      summary: Update warning status
-      description: Update the status of a specific warning (read, processing, resolved, ignored)
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Channel ID
-        - name: warningId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Warning ID
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [status]
-              properties:
-                status:
-                  type: string
-                  enum: [read, processing, resolved, ignored]
-                  description: New status for the warning
-                  example: "read"
-      responses:
-        200:
-          description: Warning status updated successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Warning status updated to read"
-                  data:
-                    type: object
-                    properties:
-                      warningId:
-                        type: string
-                        format: uuid
-                      status:
-                        type: string
-                        enum: [read, processing, resolved, ignored]
-                      processedAt:
-                        type: string
-                        format: date-time
-        400:
-          description: Invalid status
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Channel or warning not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels/{id}/statistics:
-    get:
-      summary: Get channel statistics history
-      description: Get historical statistics data for a channel
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Channel ID
-        - name: page
-          in: query
-          description: Page number
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          description: Items per page
-          required: false
-          schema:
-            type: integer
-            default: 10
-      responses:
-        200:
-          description: Statistics history retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      statistics:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uuid
-                            subscriberCount:
-                              type: string
-                            totalViews:
-                              type: string
-                            estimatedRevenue:
-                              type: string
-                            watchTime:
-                              type: string
-                            views48h:
-                              type: string
-                            views60min:
-                              type: string
-                            createdAt:
-                              type: string
-                              format: date-time
-                      pagination:
-                        type: object
-                        properties:
-                          currentPage:
-                            type: integer
-                          totalPages:
-                            type: integer
-                          totalItems:
-                            type: integer
-                          itemsPerPage:
-                            type: integer
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Channel not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels/{id}/videos:
-    get:
-      summary: Get channel videos
-      description: Get recent videos data for a channel
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Channel ID
-        - name: page
-          in: query
-          description: Page number
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          description: Items per page
-          required: false
-          schema:
-            type: integer
-            default: 10
-      responses:
-        200:
-          description: Videos retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      videos:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uuid
-                            title:
-                              type: string
-                            views:
-                              type: string
-                            likes:
-                              type: string
-                            comments:
-                              type: string
-                            createdAt:
-                              type: string
-                              format: date-time
-                      pagination:
-                        type: object
-                        properties:
-                          currentPage:
-                            type: integer
-                          totalPages:
-                            type: integer
-                          totalItems:
-                            type: integer
-                          itemsPerPage:
-                            type: integer
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Channel not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/youtube/channels/{id}/analyses:
-    get:
-      summary: Get channel analysis history
-      description: Get historical AI analysis data for a channel
-      tags: [👤 YouTube Analysis]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: Channel ID
-        - name: page
-          in: query
-          description: Page number
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          description: Items per page
-          required: false
-          schema:
-            type: integer
-            default: 10
-      responses:
-        200:
-          description: Analysis history retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: object
-                    properties:
-                      analyses:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            id:
-                              type: string
-                              format: uuid
-                            aiAnalysis:
-                              type: object
-                            analysisStatus:
-                              type: string
-                              enum: [pending, processing, completed, failed]
-                            analysisError:
-                              type: string
-                            createdAt:
-                              type: string
-                              format: date-time
-                      pagination:
-                        type: object
-                        properties:
-                          currentPage:
-                            type: integer
-                          totalPages:
-                            type: integer
-                          totalItems:
-                            type: integer
-                          itemsPerPage:
-                            type: integer
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Channel not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/schedules:
-    get:
-      summary: Get user schedules
-      tags: [📅 Schedule Management]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 10
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: [active, inactive]
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Schedule'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    post:
-      summary: Create schedule
-      description: Create a new schedule for automated channel analysis
-      tags: [📅 Schedule Management]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [channelId, name, scheduleType, time]
-              properties:
-                channelId:
-                  type: string
-                  format: uuid
-                  example: "123e4567-e89b-12d3-a456-426614174000"
-                name:
-                  type: string
-                  example: "Daily Analysis"
-                description:
-                  type: string
-                  example: "Analyze channel every day at 9 AM"
-                scheduleType:
-                  type: string
-                  enum: [minutely, hourly, daily, weekly, monthly, yearly]
-                  example: "daily"
-                time:
-                  type: object
-                  properties:
-                    hour:
-                      type: integer
-                      minimum: 0
-                      maximum: 23
-                      example: 9
-                    minute:
-                      type: integer
-                      minimum: 0
-                      maximum: 59
-                      example: 0
-                    dayOfWeek:
-                      type: integer
-                      minimum: 0
-                      maximum: 6
-                      example: 1
-                    dayOfMonth:
-                      type: integer
-                      minimum: 1
-                      maximum: 31
-                      example: 1
-                    month:
-                      type: integer
-                      minimum: 1
-                      maximum: 12
-                      example: 1
-                maxRuns:
-                  type: integer
-                  minimum: 1
-                  maximum: 1000
-                  example: 30
-                settings:
-                  type: object
-      responses:
-        201:
-          description: Schedule created
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: '#/components/schemas/Schedule'
-        400:
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/schedules/{id}:
-    put:
-      summary: Update schedule
-      tags: [📅 Schedule Management]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  example: "Updated Daily Analysis"
-                description:
-                  type: string
-                  example: "Updated description"
-                cronExpression:
-                  type: string
-                  example: "0 10 * * *"
-                isActive:
-                  type: boolean
-                  example: true
-                maxRuns:
-                  type: integer
-                  minimum: 1
-                  maximum: 1000
-                  example: 20
-                settings:
-                  type: object
-      responses:
-        200:
-          description: Schedule updated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-                  data:
-                    $ref: '#/components/schemas/Schedule'
-        400:
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Schedule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    delete:
-      summary: Delete schedule
-      tags: [📅 Schedule Management]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        200:
-          description: Schedule deleted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: Schedule not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/schedules/{id}/execute:
-    post:
-      summary: Execute schedule manually
-      tags: [📅 Schedule Management]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        200:
-          description: Schedule executed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  message:
-                    type: string
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
+  # ===== USER MANAGEMENT (ADMIN) =====
   /api/users:
     get:
-      summary: Get all users
-      description: Get paginated list of all users (Admin only)
-      tags: [🔒 Admin Only]
+      tags:
+        - User Management
+      summary: Get all users (admin)
       security:
         - bearerAuth: []
       parameters:
         - name: page
           in: query
-          description: Page number
-          required: false
           schema:
             type: integer
             default: 1
+          description: Page number
         - name: limit
           in: query
-          description: Items per page
-          required: false
           schema:
             type: integer
             default: 10
+          description: Items per page
       responses:
         200:
-          description: Users retrieved successfully
+          description: List users
           content:
             application/json:
               schema:
@@ -1685,82 +300,73 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  data:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        email:
+                          type: string
+                          example: "user@example.com"
+                        fullName:
+                          type: string
+                          example: "John Doe"
+                        role:
+                          type: string
+                          example: "user"
+                        isActive:
+                          type: boolean
+                          example: true
+                  pagination:
                     type: object
                     properties:
-                      users:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/User'
-                      pagination:
-                        type: object
-                        properties:
-                          currentPage:
-                            type: integer
-                          totalPages:
-                            type: integer
-                          totalItems:
-                            type: integer
-                          itemsPerPage:
-                            type: integer
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                      page:
+                        type: integer
+                        example: 1
+                      limit:
+                        type: integer
+                        example: 10
+                      total:
+                        type: integer
+                        example: 25
         403:
-          description: Forbidden - Admin access required
+          description: Access denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: '#/components/schemas/ErrorResponse'
   /api/users/search:
     get:
-      summary: Search users
-      description: Search users by query, role, and status (Admin only)
-      tags: [🔒 Admin Only]
+      tags:
+        - User Management
+      summary: Search users (admin)
       security:
         - bearerAuth: []
       parameters:
         - name: q
           in: query
-          description: Search query (username, email, or fullName)
-          required: false
+          required: true
           schema:
             type: string
-            example: "john"
-        - name: role
-          in: query
-          description: Filter by user role
-          required: false
-          schema:
-            type: string
-            enum: [user, admin]
-        - name: isActive
-          in: query
-          description: Filter by active status
-          required: false
-          schema:
-            type: boolean
+          description: Search query
         - name: page
           in: query
-          description: Page number
-          required: false
           schema:
             type: integer
             default: 1
+          description: Page number
         - name: limit
           in: query
-          description: Items per page
-          required: false
           schema:
             type: integer
             default: 10
+          description: Items per page
       responses:
         200:
-          description: Search results retrieved successfully
+          description: Search users
           content:
             application/json:
               schema:
@@ -1769,42 +375,37 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  data:
-                    type: object
-                    properties:
-                      users:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/User'
-                      pagination:
-                        type: object
-                        properties:
-                          currentPage:
-                            type: integer
-                          totalPages:
-                            type: integer
-                          totalItems:
-                            type: integer
-                          itemsPerPage:
-                            type: integer
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                          example: 1
+                        email:
+                          type: string
+                          example: "user@example.com"
+                        fullName:
+                          type: string
+                          example: "John Doe"
+                        role:
+                          type: string
+                          example: "user"
+                        isActive:
+                          type: boolean
+                          example: true
         403:
-          description: Forbidden - Admin access required
+          description: Access denied
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: '#/components/schemas/ErrorResponse'
   /api/users/{id}:
     get:
-      summary: Get user by ID
-      description: Get user details by ID
-      tags: [🔒 Admin Only]
+      tags:
+        - User Management
+      summary: Get user by id
       security:
         - bearerAuth: []
       parameters:
@@ -1813,11 +414,10 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
           description: User ID
       responses:
         200:
-          description: User retrieved successfully
+          description: User info
           content:
             application/json:
               schema:
@@ -1826,28 +426,34 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  data:
+                  user:
                     type: object
                     properties:
-                      user:
-                        $ref: '#/components/schemas/User'
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                      id:
+                        type: string
+                        example: 1
+                      email:
+                        type: string
+                        example: "user@example.com"
+                      fullName:
+                        type: string
+                        example: "John Doe"
+                      role:
+                        type: string
+                        example: "user"
+                      isActive:
+                        type: boolean
+                        example: true
         404:
           description: User not found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
+                $ref: '#/components/schemas/ErrorResponse'
     put:
+      tags:
+        - User Management
       summary: Update user
-      description: Update user information
-      tags: [🔒 Admin Only]
       security:
         - bearerAuth: []
       parameters:
@@ -1856,7 +462,6 @@ paths:
           required: true
           schema:
             type: string
-            format: uuid
           description: User ID
       requestBody:
         required: true
@@ -1865,36 +470,130 @@ paths:
             schema:
               type: object
               properties:
-                username:
+                fullName:
                   type: string
-                  minLength: 3
-                  maxLength: 50
-                  pattern: '^[a-zA-Z0-9_]+$'
-                  description: Username (alphanumeric only)
-                  example: "john_doe"
+                  example: "John Doe Updated"
                 email:
                   type: string
                   format: email
-                  description: Email address
-                  example: "john@example.com"
-                fullName:
-                  type: string
-                  minLength: 2
-                  maxLength: 100
-                  description: Full name
-                  example: "John Doe"
-                role:
-                  type: string
-                  enum: [user, admin]
-                  description: User role
-                  example: "user"
-                isActive:
-                  type: boolean
-                  description: User active status
-                  example: true
+                  example: "updated@example.com"
       responses:
         200:
-          description: User updated successfully
+          description: User updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - User Management
+      summary: Toggle user status (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        200:
+          description: Status toggled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        403:
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - User Management
+      summary: Delete user (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: User ID
+      responses:
+        200:
+          description: User deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        403:
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ===== YOUTUBE OAUTH2 & AUTHORIZATION =====
+  /api/youtube-auth/auth-url:
+    post:
+      tags:
+        - YouTube OAuth
+      summary: Get YouTube OAuth2 URL
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: OAuth2 URL
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  authUrl:
+                    type: string
+                    example: "https://accounts.google.com/o/oauth2/auth?..."
+                  message:
+                    type: string
+                    example: "Authorization URL generated successfully"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-auth/callback:
+    get:
+      tags:
+        - YouTube OAuth
+      summary: OAuth2 callback & sync
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from YouTube
+        - name: state
+          in: query
+          schema:
+            type: string
+          description: State parameter containing user info
+      responses:
+        200:
+          description: OAuth2 callback handled
           content:
             application/json:
               schema:
@@ -1905,65 +604,381 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "User updated successfully"
-                  data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+                    example: "YouTube authorization successful"
+                  hasAnalyticsAccess:
+                    type: boolean
+                    example: true
         400:
-          description: Validation error
+          description: Invalid callback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-auth/refresh:
+    post:
+      tags:
+        - YouTube OAuth
+      summary: Refresh YouTube access token
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Token refreshed
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Access token refreshed successfully"
+                  hasAnalyticsAccess:
+                    type: boolean
+                    example: true
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: No refresh token found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-auth/status:
+    get:
+      tags:
+        - YouTube OAuth
+      summary: Get YouTube auth status
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  isAuthorized:
+                    type: boolean
+                    example: true
+                  hasAnalyticsAccess:
+                    type: boolean
+                    example: true
+                  tokenExpiresAt:
+                    type: string
+                    format: date-time
+                    example: "2024-12-31T23:59:59.000Z"
+                  isExpired:
                     type: boolean
                     example: false
                   message:
                     type: string
-                    example: "Validation error"
-                  errors:
+                    example: "User authorized with YouTube"
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-auth/revoke:
+    delete:
+      tags:
+        - YouTube OAuth
+      summary: Revoke YouTube auth
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ===== YOUTUBE DATA SYNC =====
+  /api/youtube-sync/channel:
+    post:
+      tags:
+        - YouTube Sync
+      summary: Sync YouTube channel data
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Sync success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Channel data synced successfully"
+                  channelsCount:
+                    type: integer
+                    example: 2
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-sync/revenue:
+    post:
+      tags:
+        - YouTube Sync
+      summary: Sync revenue for channel/video
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncRevenueRequest'
+      responses:
+        200:
+          description: Revenue sync success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Revenue data synced successfully"
+                  syncedRecords:
+                    type: integer
+                    example: 150
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-sync/revenue/all-channels:
+    post:
+      tags:
+        - YouTube Sync
+      summary: Sync revenue for all user channels
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - startDate
+                - endDate
+              properties:
+                startDate:
+                  type: string
+                  format: date
+                  example: "2024-01-01"
+                endDate:
+                  type: string
+                  format: date
+                  example: "2024-01-31"
+      responses:
+        200:
+          description: All revenue sync success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "All channels revenue synced successfully"
+                  channelsSynced:
+                    type: integer
+                    example: 3
+                  totalRecords:
+                    type: integer
+                    example: 450
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-sync/status:
+    get:
+      tags:
+        - YouTube Sync
+      summary: Get sync status
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  lastSync:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00.000Z"
+                  channelsCount:
+                    type: integer
+                    example: 2
+                  videosCount:
+                    type: integer
+                    example: 45
+                  isSyncing:
+                    type: boolean
+                    example: false
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # ===== YOUTUBE ANALYTICS =====
+  /api/youtube-analytics/channel/revenue:
+    get:
+      tags:
+        - YouTube Analytics
+      summary: Get channel revenue data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Start date (YYYY-MM-DD)
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: End date (YYYY-MM-DD)
+        - name: channelId
+          in: query
+          schema:
+            type: string
+          description: Specific channel ID (optional)
+      responses:
+        200:
+          description: Channel revenue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
                     type: array
                     items:
-                      type: string
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          example: "2024-01-15"
+                        revenue:
+                          type: number
+                          format: float
+                          example: 125.50
+                        views:
+                          type: integer
+                          example: 15000
+                        channelId:
+                          type: string
+                          example: "UC123456789"
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         401:
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        409:
-          description: Email or username already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    delete:
-      summary: Delete user
-      description: Soft delete user by deactivating (Admin only)
-      tags: [🔒 Admin Only]
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-analytics/video/revenue:
+    get:
+      tags:
+        - YouTube Analytics
+      summary: Get video revenue data
       security:
         - bearerAuth: []
       parameters:
-        - name: id
-          in: path
+        - name: startDate
+          in: query
           required: true
           schema:
             type: string
-            format: uuid
-          description: User ID
+            format: date
+          description: Start date (YYYY-MM-DD)
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: End date (YYYY-MM-DD)
+        - name: videoId
+          in: query
+          schema:
+            type: string
+          description: Specific video ID (optional)
       responses:
         200:
-          description: User deleted successfully
+          description: Video revenue
           content:
             application/json:
               schema:
@@ -1972,89 +987,110 @@ paths:
                   success:
                     type: boolean
                     example: true
-                  message:
-                    type: string
-                    example: "User deleted successfully"
-        401:
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        403:
-          description: Forbidden - Admin access required
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: User not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /api/users/{id}/toggle-status:
-    patch:
-      summary: Toggle user status
-      description: Activate or deactivate user (Admin only)
-      tags: [🔒 Admin Only]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-          description: User ID
-      responses:
-        200:
-          description: User status toggled successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "User activated successfully"
                   data:
-                    type: object
-                    properties:
-                      user:
-                        $ref: '#/components/schemas/User'
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                          format: date
+                          example: "2024-01-15"
+                        revenue:
+                          type: number
+                          format: float
+                          example: 45.75
+                        views:
+                          type: integer
+                          example: 8500
+                        videoId:
+                          type: string
+                          example: "dQw4w9WgXcQ"
+                        videoTitle:
+                          type: string
+                          example: "Amazing Video Title"
+        400:
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         401:
           description: Unauthorized
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        403:
-          description: Forbidden - Admin access required
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/youtube-analytics/aggregated/revenue:
+    get:
+      tags:
+        - YouTube Analytics
+      summary: Get aggregated revenue data
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: Start date (YYYY-MM-DD)
+        - name: endDate
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+          description: End date (YYYY-MM-DD)
+        - name: groupBy
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month]
+            default: day
+          description: Group by time period
+      responses:
+        200:
+          description: Aggregated revenue
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        404:
-          description: User not found
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        period:
+                          type: string
+                          example: "2024-01-15"
+                        totalRevenue:
+                          type: number
+                          format: float
+                          example: 1250.75
+                        totalViews:
+                          type: integer
+                          example: 150000
+                        channelCount:
+                          type: integer
+                          example: 2
+                        videoCount:
+                          type: integer
+                          example: 45
+        400:
+          description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-
-tags:
-  - name: 🔓 Public
-    description: Public endpoints - no authentication required
-  - name: 👤 Authentication
-    description: User authentication and authorization
-  - name: 👤 YouTube Analysis
-    description: YouTube channel analysis with AI (user operations)
-  - name: 📅 Schedule Management
-    description: Schedule management for automated data collection
-  - name: 🔒 Admin Only
-    description: Admin-only endpoints for user management 
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

@@ -5,14 +5,15 @@ const {
   getVideoRevenueData, 
   getAggregatedRevenueData 
 } = require('../controllers/youtubeAnalyticsController');
+const { authenticateToken } = require('../middleware/authMiddleware');
 
 // Get channel revenue data
-router.get('/channel/:userId/revenue', getChannelRevenueData);
+router.get('/channel/revenue', authenticateToken, getChannelRevenueData);
 
 // Get video revenue data
-router.get('/video/:userId/revenue', getVideoRevenueData);
+router.get('/video/revenue', authenticateToken, getVideoRevenueData);
 
 // Get aggregated revenue data
-router.get('/aggregated/:userId/revenue', getAggregatedRevenueData);
+router.get('/aggregated/revenue', authenticateToken, getAggregatedRevenueData);
 
 module.exports = router; 
