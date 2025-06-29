@@ -15,7 +15,7 @@ const AccessToken = sequelize.define('AccessToken', {
       key: 'id'
     }
   },
-  channel_id: {
+  channel_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -50,7 +50,7 @@ const AccessToken = sequelize.define('AccessToken', {
   updatedAt: false,
   indexes: [
     { fields: ['user_id'] },
-    { fields: ['channel_id'] }
+    { fields: ['channel_db_id'] }
   ]
 });
 

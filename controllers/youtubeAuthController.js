@@ -1,6 +1,7 @@
 const { generateAuthUrl, exchangeCodeForTokens, refreshAccessToken } = require('../config/youtube');
 const { AccessToken, YouTubeChannel } = require('../models');
 const jwt = require('jsonwebtoken');
+const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
@@ -68,6 +69,10 @@ const handleCallback = async (req, res) => {
       });
     }
 
+    if (!userId) {
+      throw new Error('Missing userId in OAuth state');
+    }
+
     // Exchange authorization code for tokens
     const tokenResult = await exchangeCodeForTokens(code);
     
@@ -127,28 +132,29 @@ const handleCallback = async (req, res) => {
 
     // Check if user already has an access token
     const existingToken = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true, channel_id: channelId }
+      where: { user_id: userId, is_active: true, channel_db_id: channelId }
     });
 
     if (existingToken) {
       // Update existing token
-      await existingToken.update({
-        accessToken: tokens.access_token,
-        refreshToken: tokens.refresh_token,
-        scope: tokens.scope,
-        tokenType: tokens.token_type,
-        expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-        is_active: true
-      });
+      await AccessToken.update(
+        {
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          scope: tokens.scope,
+          expires_at: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          is_active: true
+        },
+        { where: { id: existingToken.id } }
+      );
     } else {
       // Create new token record
       await AccessToken.create({
         user_id: userId,
-        channel_id: channelId,
+        channel_db_id: channelId,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         scope: tokens.scope,
-        tokenType: tokens.token_type,
         expires_at: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         is_active: true
       });
@@ -320,10 +326,69 @@ const revokeAuth = async (req, res) => {
   }
 };
 
+// Callback nhận code, đổi token, đồng bộ dữ liệu kênh
+const handleCallbackAndSync = async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code) return res.status(400).send('Missing code');
+
+    // Giải mã userId từ state (nếu có)
+    let userId = null;
+    if (state) {
+      try {
+        const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+        userId = decoded.userId;
+      } catch (e) {}
+    }
+    if (!userId) {
+      throw new Error('Missing userId in OAuth state');
+    }
+    const result = await exchangeCodeForTokens(code);
+    if (!result.success) return res.status(400).json({ success: false, error: result.error });
+    
+    // Lấy channel_id của user hiện tại
+    const axios = require('axios');
+    const channelRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
+      params: {
+        part: 'id,snippet',
+        mine: true,
+        access_token: result.tokens.access_token
+      }
+    });
+    
+    if (!channelRes.data.items || channelRes.data.items.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No YouTube channel found for this user' 
+      });
+    }
+    
+    const channelId = channelRes.data.items[0].id;
+    // Gọi syncYouTubeChannelData và truyền đủ các trường token
+    const syncResult = await syncYouTubeChannelData({
+      userId,
+      channelId,
+      accessToken: result.tokens.access_token,
+      refreshToken: result.tokens.refresh_token,
+      scope: result.tokens.scope,
+      tokenType: result.tokens.token_type,
+      expiresAt: result.tokens.expiry_date
+    });
+    return res.json({
+      success: true,
+      message: 'YouTube authorization & sync successful',
+      syncResult
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+};
+
 module.exports = {
   getAuthUrl,
   handleCallback,
   refreshToken,
   getAuthStatus,
-  revokeAuth
+  revokeAuth,
+  handleCallbackAndSync,
 }; 

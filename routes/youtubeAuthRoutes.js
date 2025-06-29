@@ -5,14 +5,18 @@ const {
   handleCallback, 
   refreshToken, 
   getAuthStatus, 
-  revokeAuth 
+  revokeAuth,
+  handleCallbackAndSync
 } = require('../controllers/youtubeAuthController');
+const { exchangeCodeForTokens } = require('../config/youtube');
+const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
+const { User } = require('../models');
 
 // Generate OAuth2 authorization URL
 router.post('/auth-url', getAuthUrl);
 
 // Handle OAuth2 callback (GET request from YouTube)
-router.get('/callback', handleCallback);
+router.get('/callback', handleCallbackAndSync);
 
 // Refresh access token
 router.post('/refresh', refreshToken);

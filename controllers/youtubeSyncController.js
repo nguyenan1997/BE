@@ -163,7 +163,7 @@ const getSyncStatus = async (req, res) => {
     
     // Kiểm tra authorization status
     const tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true }
+      where: { user_id: req.user.id, is_active: true, channel_db_id: channelDbId }
     });
 
     const authStatus = {

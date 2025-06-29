@@ -69,11 +69,11 @@ Video.belongsTo(YouTubeChannel, {
 
 // YouTubeChannel 1-1 AccessToken (nếu cần)
 YouTubeChannel.hasOne(AccessToken, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'access_token'
 });
 AccessToken.belongsTo(YouTubeChannel, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'youtube_channel'
 });
 

@@ -8,8 +8,15 @@ const { refreshAccessToken, createYouTubeAnalyticsClient } = require('../config/
  * @param {string} params.userId
  * @param {string} params.channelId
  * @param {string} params.accessToken (optional - sẽ lấy từ database nếu không cung cấp)
+ * @param {string} params.refreshToken (optional)
+ * @param {string} params.scope (optional)
+ * @param {string} params.tokenType (optional)
+ * @param {string|Date} params.expiresAt (optional)
  */
-async function syncYouTubeChannelData({ userId, channelId, accessToken = null }) {
+async function syncYouTubeChannelData({ userId, channelId, accessToken = null, refreshToken = null, scope = null, tokenType = null, expiresAt = null }) {
+  console.log("userId", userId);
+  console.log("channelId", channelId);
+  console.log("accessToken", accessToken);
   // Helper lấy field an toàn
   const safe = (obj, path, def = null) => {
     try {
@@ -20,7 +27,7 @@ async function syncYouTubeChannelData({ userId, channelId, accessToken = null })
   // Lấy access token từ database nếu không cung cấp
   if (!accessToken) {
     const tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true }
+      where: { user_id: userId, is_active: true, channel_db_id: channelId }
     });
 
     if (!tokenRecord) {
@@ -76,6 +83,35 @@ async function syncYouTubeChannelData({ userId, channelId, accessToken = null })
   });
 
   const channelDbId = dbChannel[0].id || dbChannel.id;
+
+  // --- Update/create AccessToken nếu accessToken được truyền vào ---
+  if (accessToken) {
+    let tokenRecord = await AccessToken.findOne({
+      where: { user_id: userId, channel_db_id: channelDbId, is_active: true }
+    });
+    if (tokenRecord) {
+      await tokenRecord.update({
+        access_token: accessToken,
+        refresh_token: refreshToken || tokenRecord.refresh_token,
+        scope: scope || tokenRecord.scope,
+        token_type: tokenType || tokenRecord.token_type,
+        expires_at: expiresAt ? new Date(expiresAt) : tokenRecord.expires_at,
+        is_active: true
+      });
+    } else {
+      await AccessToken.create({
+        user_id: userId,
+        channel_db_id: channelDbId,
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        scope: scope,
+        token_type: tokenType,
+        expires_at: expiresAt ? new Date(expiresAt) : null,
+        is_active: true
+      });
+    }
+  }
+  // --- End update/create AccessToken ---
 
   // 3. Lấy revenue data cho kênh (30 ngày gần nhất)
   let channelRevenue = null;
@@ -215,7 +251,7 @@ async function syncYouTubeChannelData({ userId, channelId, accessToken = null })
 async function syncRevenueData({ userId, channelId = null, videoId = null, startDate, endDate }) {
   // Lấy access token
   const tokenRecord = await AccessToken.findOne({
-    where: { user_id: userId, is_active: true }
+    where: { user_id: userId, is_active: true, channel_db_id: channelId }
   });
 
   if (!tokenRecord) {
