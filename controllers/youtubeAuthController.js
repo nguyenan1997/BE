@@ -6,20 +6,15 @@ const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
   try {
-    const userId = req.currentUser.userId;
-    
-    // Generate state parameter to include user ID
-    const state = Buffer.from(JSON.stringify({ userId })).toString('base64');
-    
-    // Generate authorization URL
+    // Mục đích của state là để tránh CSRF
+    const state = Math.random().toString(36).substring(2);
+    console.log("state", state);
     const authUrl = generateAuthUrl(state);
-    
     res.json({
       success: true,
       authUrl: authUrl,
       message: 'Authorization URL generated successfully'
     });
-    
   } catch (error) {
     console.error('Error generating auth URL:', error);
     res.status(500).json({
@@ -151,26 +146,37 @@ const revokeAuth = async (req, res) => {
   }
 };
 
-// Callback nhận code, đổi token, đồng bộ dữ liệu kênh
-const handleCallbackAndSync = async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    if (!code) return res.status(400).send('Missing code');
+// Callback chỉ redirect về frontend
+const handleCallbackAndRedirect = (req, res) => {
+  const { code } = req.query;
+  console.log("code", code);
+  // Redirect về frontend, truyền code qua query
+  res.redirect(`https://your-frontend.com/oauth-success?code=${code}`);
+};
 
-    // Giải mã userId từ state (nếu có)
+// Xử lý thực sự: nhận code từ frontend, userId từ JWT
+const finishOAuth = async (req, res) => {
+  try {
+    const { code } = req.body;
+    // Lấy userId từ JWT
+    let token = null;
+    if (req.headers && req.headers.authorization) {
+      const parts = req.headers.authorization.split(' ');
+      if (parts.length === 2 && parts[0] === 'Bearer') token = parts[1];
+    }
     let userId = null;
-    if (state) {
+    if (token) {
       try {
-        const decoded = JSON.parse(Buffer.from(state, 'base64').toString());
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         userId = decoded.userId;
       } catch (e) {}
     }
-    if (!userId) {
-      throw new Error('Missing userId in OAuth state');
-    }
+    if (!userId) return res.status(401).json({ success: false, error: 'Missing userId from JWT' });
+
+    // Đổi code lấy token
     const result = await exchangeCodeForTokens(code);
     if (!result.success) return res.status(400).json({ success: false, error: result.error });
-    
+
     // Lấy channel_id của user hiện tại
     const axios = require('axios');
     const channelRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
@@ -180,14 +186,14 @@ const handleCallbackAndSync = async (req, res) => {
         access_token: result.tokens.access_token
       }
     });
-    
+
     if (!channelRes.data.items || channelRes.data.items.length === 0) {
       return res.status(400).json({ 
         success: false, 
         error: 'No YouTube channel found for this user' 
       });
     }
-    
+
     const channelId = channelRes.data.items[0].id;
     // Gọi syncYouTubeChannelData và truyền đủ các trường token
     const syncResult = await syncYouTubeChannelData({
@@ -199,6 +205,7 @@ const handleCallbackAndSync = async (req, res) => {
       tokenType: result.tokens.token_type,
       expiresAt: result.tokens.expiry_date
     });
+
     return res.json({
       success: true,
       message: 'YouTube authorization & sync successful',
@@ -211,8 +218,9 @@ const handleCallbackAndSync = async (req, res) => {
 
 module.exports = {
   getAuthUrl,
+  handleCallbackAndRedirect,
+  finishOAuth,
   refreshToken,
   getAuthStatus,
-  revokeAuth,
-  handleCallbackAndSync,
+  revokeAuth
 }; 

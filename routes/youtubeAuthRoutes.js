@@ -5,7 +5,8 @@ const {
   refreshToken, 
   getAuthStatus, 
   revokeAuth,
-  handleCallbackAndSync
+  handleCallbackAndRedirect,
+  finishOAuth
 } = require('../controllers/youtubeAuthController');
 const { User } = require('../models');
 const { authenticateToken } = require('../middleware/authMiddleware');
@@ -13,8 +14,11 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 // Generate OAuth2 authorization URL
 router.post('/auth-url', authenticateToken, getAuthUrl);
 
-// Handle OAuth2 callback (GET request from YouTube)
-router.get('/callback', handleCallbackAndSync);
+// Handle OAuth2 callback: just redirect to frontend
+router.get('/callback', handleCallbackAndRedirect);
+
+// Finish OAuth2: exchange code, needs JWT
+router.post('/finish', authenticateToken, finishOAuth);
 
 // Refresh access token
 router.post('/refresh', authenticateToken, refreshToken);

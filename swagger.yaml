@@ -578,7 +578,7 @@ paths:
     get:
       tags:
         - YouTube OAuth
-      summary: OAuth2 callback & sync
+      summary: OAuth2 callback (redirects to frontend with code)
       parameters:
         - name: code
           in: query
@@ -590,10 +590,32 @@ paths:
           in: query
           schema:
             type: string
-          description: State parameter containing user info
+          description: State parameter (optional, for CSRF protection)
+      responses:
+        302:
+          description: Redirects to frontend with code in query string
+  /api/youtube-auth/finish:
+    post:
+      tags:
+        - YouTube OAuth
+      summary: Finish OAuth2 flow (exchange code, sync channel)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                code:
+                  type: string
+                  description: Authorization code received from Google
       responses:
         200:
-          description: OAuth2 callback handled
+          description: YouTube authorization & sync successful
           content:
             application/json:
               schema:
@@ -604,12 +626,18 @@ paths:
                     example: true
                   message:
                     type: string
-                    example: "YouTube authorization successful"
-                  hasAnalyticsAccess:
-                    type: boolean
-                    example: true
+                    example: "YouTube authorization & sync successful"
+                  syncResult:
+                    type: object
+                    description: Sync result details
         400:
-          description: Invalid callback
+          description: Invalid code or sync error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        401:
+          description: Unauthorized
           content:
             application/json:
               schema:
