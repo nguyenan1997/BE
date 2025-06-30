@@ -75,6 +75,13 @@ const updateUser = async (req, res, next) => {
       });
     }
 
+    if (req.currentUser.role !== 'admin' && req.currentUser.id !== user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'You do not have permission to update this user.'
+      });
+    }
+
     // Nếu không phải admin, không cho phép đổi role và isActive
     if (req.currentUser.role !== 'admin') {
       if ('role' in fieldsToUpdate || 'isActive' in fieldsToUpdate) {
