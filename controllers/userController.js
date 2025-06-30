@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { validateUserUpdate } = require('../validators/userValidator');
+const { Op } = require('sequelize');
 
 // Get all users (with pagination)
 const getAllUsers = async (req, res, next) => {
@@ -189,10 +190,10 @@ const searchUsers = async (req, res, next) => {
 
     // Search by query
     if (q) {
-      whereClause[User.sequelize.Op.or] = [
-        { username: { [User.sequelize.Op.iLike]: `%${q}%` } },
-        { email: { [User.sequelize.Op.iLike]: `%${q}%` } },
-        { fullName: { [User.sequelize.Op.iLike]: `%${q}%` } }
+      whereClause[Op.or] = [
+        { username: { [Op.iLike]: `%${q}%` } },
+        { email: { [Op.iLike]: `%${q}%` } },
+        { fullName: { [Op.iLike]: `%${q}%` } }
       ];
     }
 

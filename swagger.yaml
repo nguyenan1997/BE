@@ -364,6 +364,17 @@ paths:
             type: integer
             default: 10
           description: Items per page
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [user, admin]
+          description: Filter by role
+        - name: isActive
+          in: query
+          schema:
+            type: boolean
+          description: Filter by active status (true/false)
       responses:
         200:
           description: Search users
