@@ -2,6 +2,7 @@ const { generateAuthUrl, exchangeCodeForTokens, refreshAccessToken } = require('
 const { AccessToken, YouTubeChannel } = require('../models');
 const jwt = require('jsonwebtoken');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
+require('dotenv').config();
 
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
@@ -149,9 +150,8 @@ const revokeAuth = async (req, res) => {
 // Callback chỉ redirect về frontend
 const handleCallbackAndRedirect = (req, res) => {
   const { code } = req.query;
-  console.log("OAuth callback code:", code);
-  // Redirect về frontend, truyền code qua query
-  res.redirect(`https://localhost:5173/oauth-success?code=${code}`);
+  const frontendUrl = process.env.FRONTEND_URL;
+  res.redirect(`${frontendUrl}/oauth-success?code=${code}`);
 };
 
 // Xử lý thực sự: nhận code từ frontend, userId từ JWT
