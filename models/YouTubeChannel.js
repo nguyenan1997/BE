@@ -16,60 +16,42 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
       key: 'id'
     }
   },
-  channelName: {
-    type: DataTypes.STRING(255),
+  channel_id: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  channel_title: {
+    type: DataTypes.STRING,
     allowNull: false
   },
-  description: {
+  channel_description: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  category: {
-    type: DataTypes.STRING(100),
+  channel_custom_url: {
+    type: DataTypes.STRING,
     allowNull: true
   },
-  joinDate: {
-    type: DataTypes.STRING(100),
-    allowNull: true,
-    field: 'join_date'
-  },
-  location: {
-    type: DataTypes.STRING(100),
+  channel_country: {
+    type: DataTypes.STRING,
     allowNull: true
   },
-  imageUrl: {
+  channel_thumbnail_url: {
     type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'image_url'
+    allowNull: true
   },
-  originalImageName: {
-    type: DataTypes.STRING(255),
-    allowNull: true,
-    field: 'original_image_name'
+  channel_creation_date: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
-  socialLinks: {
-    type: DataTypes.JSON,
-    allowNull: true,
-    field: 'social_links'
+  is_verified: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true
   },
-  analysisStatus: {
-    type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed'),
-    defaultValue: 'pending',
-    field: 'analysis_status'
-  },
-  analysisError: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-    field: 'analysis_error'
-  },
-  analyzedBy: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    field: 'analyzed_by',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
+  is_monitized: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true
   }
 }, {
   tableName: 'youtube_channels',
@@ -77,18 +59,8 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
-    {
-      fields: ['user_id']
-    },
-    {
-      fields: ['analyzed_by']
-    },
-    {
-      fields: ['analysis_status']
-    },
-    {
-      fields: ['channel_name']
-    }
+    { fields: ['user_id'] },
+    { fields: ['channel_id'] }
   ]
 });
 

@@ -1,27 +1,23 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const ChannelStatistics = sequelize.define('ChannelStatistics', {
+const VideoStatistics = sequelize.define('VideoStatistics', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  channel_id: {
+  video_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'youtube_channels',
+      model: 'videos',
       key: 'id'
     }
   },
   date: {
     type: DataTypes.DATE,
     allowNull: false
-  },
-  subscriber_count: {
-    type: DataTypes.INTEGER,
-    allowNull: true
   },
   view_count: {
     type: DataTypes.INTEGER,
@@ -39,31 +35,19 @@ const ChannelStatistics = sequelize.define('ChannelStatistics', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
-  watch_time_minutes: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
   estimated_revenue: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  view_growth_percent: {
-    type: DataTypes.FLOAT,
-    allowNull: true
-  },
-  subscriber_growth_percent: {
     type: DataTypes.FLOAT,
     allowNull: true
   }
 }, {
-  tableName: 'channel_statistics',
+  tableName: 'video_statistics',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: false,
   indexes: [
-    { fields: ['channel_id'] },
+    { fields: ['video_id'] },
     { fields: ['date'] }
   ]
 });
 
-module.exports = ChannelStatistics; 
+module.exports = VideoStatistics; 

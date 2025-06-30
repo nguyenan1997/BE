@@ -1,93 +1,99 @@
 const User = require('./User');
 const YouTubeChannel = require('./YouTubeChannel');
-const Schedule = require('./Schedule');
 const ChannelStatistics = require('./ChannelStatistics');
-const ChannelWarning = require('./ChannelWarning');
-const ChannelVideo = require('./ChannelVideo');
-const ChannelAnalysis = require('./ChannelAnalysis');
+const ChannelViolation = require('./ChannelViolation');
+const Video = require('./Video');
+const VideoStatistics = require('./VideoStatistics');
+const AccessToken = require('./AccessToken');
+const UserSchedule = require('./UserSchedule');
 
-// User relationships
+// User 1-n YouTubeChannel
 User.hasMany(YouTubeChannel, {
-  foreignKey: 'userId',
-  as: 'youtubeChannels'
+  foreignKey: 'user_id',
+  as: 'youtube_channels'
 });
-
 YouTubeChannel.belongsTo(User, {
-  foreignKey: 'userId',
+  foreignKey: 'user_id',
   as: 'user'
 });
 
-User.hasMany(Schedule, {
-  foreignKey: 'userId',
-  as: 'schedules'
+// User 1-n AccessToken
+User.hasMany(AccessToken, {
+  foreignKey: 'user_id',
+  as: 'access_tokens'
 });
-
-Schedule.belongsTo(User, {
-  foreignKey: 'userId',
+AccessToken.belongsTo(User, {
+  foreignKey: 'user_id',
   as: 'user'
 });
 
-// YouTube Channel relationships
-YouTubeChannel.hasMany(Schedule, {
-  foreignKey: 'channelId',
-  as: 'schedules'
+// User 1-1 UserSchedule
+User.hasOne(UserSchedule, {
+  foreignKey: 'user_id',
+  as: 'user_schedule'
+});
+UserSchedule.belongsTo(User, {
+  foreignKey: 'user_id',
+  as: 'user'
 });
 
-Schedule.belongsTo(YouTubeChannel, {
-  foreignKey: 'channelId',
-  as: 'channel'
-});
-
-// Channel Statistics relationships
+// YouTubeChannel 1-n ChannelStatistics
 YouTubeChannel.hasMany(ChannelStatistics, {
-  foreignKey: 'channelId',
-  as: 'statistics'
+  foreignKey: 'channel_id',
+  as: 'channel_statistics'
 });
-
 ChannelStatistics.belongsTo(YouTubeChannel, {
-  foreignKey: 'channelId',
-  as: 'channel'
+  foreignKey: 'channel_id',
+  as: 'youtube_channel'
 });
 
-// Channel Warning relationships
-YouTubeChannel.hasMany(ChannelWarning, {
-  foreignKey: 'channelId',
-  as: 'warnings'
+// YouTubeChannel 1-n ChannelViolation
+YouTubeChannel.hasMany(ChannelViolation, {
+  foreignKey: 'channel_id',
+  as: 'channel_violations'
+});
+ChannelViolation.belongsTo(YouTubeChannel, {
+  foreignKey: 'channel_id',
+  as: 'youtube_channel'
 });
 
-ChannelWarning.belongsTo(YouTubeChannel, {
-  foreignKey: 'channelId',
-  as: 'channel'
-});
-
-// Channel Video relationships
-YouTubeChannel.hasMany(ChannelVideo, {
-  foreignKey: 'channelId',
+// YouTubeChannel 1-n Video
+YouTubeChannel.hasMany(Video, {
+  foreignKey: 'channel_id',
   as: 'videos'
 });
-
-ChannelVideo.belongsTo(YouTubeChannel, {
-  foreignKey: 'channelId',
-  as: 'channel'
+Video.belongsTo(YouTubeChannel, {
+  foreignKey: 'channel_id',
+  as: 'youtube_channel'
 });
 
-// Channel Analysis relationships
-YouTubeChannel.hasMany(ChannelAnalysis, {
-  foreignKey: 'channelId',
-  as: 'analyses'
+// YouTubeChannel 1-1 AccessToken (nếu cần)
+YouTubeChannel.hasOne(AccessToken, {
+  foreignKey: 'channel_db_id',
+  as: 'access_token'
+});
+AccessToken.belongsTo(YouTubeChannel, {
+  foreignKey: 'channel_db_id',
+  as: 'youtube_channel'
 });
 
-ChannelAnalysis.belongsTo(YouTubeChannel, {
-  foreignKey: 'channelId',
-  as: 'channel'
+// Video 1-n VideoStatistics
+Video.hasMany(VideoStatistics, {
+  foreignKey: 'video_id',
+  as: 'video_statistics'
+});
+VideoStatistics.belongsTo(Video, {
+  foreignKey: 'video_id',
+  as: 'video'
 });
 
 module.exports = {
   User,
   YouTubeChannel,
-  Schedule,
   ChannelStatistics,
-  ChannelWarning,
-  ChannelVideo,
-  ChannelAnalysis
+  ChannelViolation,
+  Video,
+  VideoStatistics,
+  AccessToken,
+  UserSchedule
 }; 
