@@ -186,6 +186,14 @@ const toggleUserStatus = async (req, res, next) => {
       });
     }
 
+    // Không cho phép admin tự vô hiệu hóa chính mình
+    if (req.currentUser.id === user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin cannot deactivate their own account.'
+      });
+    }
+
     await user.update({ isActive: !user.isActive });
 
     res.json({

@@ -149,9 +149,9 @@ const revokeAuth = async (req, res) => {
 // Callback chỉ redirect về frontend
 const handleCallbackAndRedirect = (req, res) => {
   const { code } = req.query;
-  console.log("code", code);
+  console.log("OAuth callback code:", code);
   // Redirect về frontend, truyền code qua query
-  res.redirect(`https://your-frontend.com/oauth-success?code=${code}`);
+  res.redirect(`https://localhost:5173/oauth-success?code=${code}`);
 };
 
 // Xử lý thực sự: nhận code từ frontend, userId từ JWT
