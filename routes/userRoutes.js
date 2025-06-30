@@ -19,7 +19,7 @@ router.get('/', authorizeRoles(['admin']), getAllUsers);
 router.get('/search', authorizeRoles(['admin']), searchUsers);
 router.get('/:id', getUserById);
 router.put('/:id', authorizeOwnResource('id'), validateUserUpdateMiddleware, updateUser);
-router.patch('/:id/toggle-status', authorizeRoles(['admin']), toggleUserStatus);
+router.patch('/:id', authorizeRoles(['admin']), toggleUserStatus);
 router.delete('/:id', authorizeRoles(['admin']), deleteUser);
 
 module.exports = router; 
