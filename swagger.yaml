@@ -23,6 +23,9 @@ components:
           type: string
           format: email
           example: "user@example.com"
+        username:
+          type: string
+          example: "use123"
         password:
           type: string
           example: "password123"
@@ -30,6 +33,7 @@ components:
       type: object
       required:
         - email
+        - username
         - password
         - fullName
       properties:
@@ -37,6 +41,9 @@ components:
           type: string
           format: email
           example: "newuser@example.com"
+        username:
+          type: string
+          example: "newuser123.com"
         password:
           type: string
           example: "password123"
