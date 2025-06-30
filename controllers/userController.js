@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { validateUserUpdate } = require('../validators/userValidator');
 const { Op } = require('sequelize');
+const bcrypt = require('bcryptjs');
 
 // Get all users (with pagination)
 const getAllUsers = async (req, res, next) => {
@@ -64,19 +65,9 @@ const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-
-    // Validate input
-    const { error, value } = validateUserUpdate(updateData);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation error',
-        errors: error.details.map(detail => detail.message)
-      });
-    }
+    const { currentPassword, newPassword, ...fieldsToUpdate } = updateData;
 
     const user = await User.findByPk(id);
-    
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -84,11 +75,19 @@ const updateUser = async (req, res, next) => {
       });
     }
 
+    // Nếu không phải admin, không cho phép đổi role và isActive
+    if (req.currentUser.role !== 'admin') {
+      if ('role' in fieldsToUpdate || 'isActive' in fieldsToUpdate) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to update role or isActive. Only admin can do this.'
+        });
+      }
+    }
+
     // Check if user is trying to update email/username that already exists
-    if (value.email && value.email !== user.email) {
-      const existingUser = await User.findOne({
-        where: { email: value.email }
-      });
+    if (fieldsToUpdate.email && fieldsToUpdate.email !== user.email) {
+      const existingUser = await User.findOne({ where: { email: fieldsToUpdate.email } });
       if (existingUser) {
         return res.status(409).json({
           success: false,
@@ -96,11 +95,8 @@ const updateUser = async (req, res, next) => {
         });
       }
     }
-
-    if (value.username && value.username !== user.username) {
-      const existingUser = await User.findOne({
-        where: { username: value.username }
-      });
+    if (fieldsToUpdate.username && fieldsToUpdate.username !== user.username) {
+      const existingUser = await User.findOne({ where: { username: fieldsToUpdate.username } });
       if (existingUser) {
         return res.status(409).json({
           success: false,
@@ -109,8 +105,20 @@ const updateUser = async (req, res, next) => {
       }
     }
 
+    // Đổi mật khẩu nếu có newPassword
+    if (newPassword) {
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Current password is incorrect'
+        });
+      }
+      fieldsToUpdate.password = newPassword;
+    }
+
     // Update user
-    await user.update(value);
+    await user.update(fieldsToUpdate);
 
     res.json({
       success: true,

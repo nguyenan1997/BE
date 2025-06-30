@@ -67,11 +67,40 @@ const validateUserUpdate = (data) => {
   return userUpdateSchema.validate(data, { abortEarly: false });
 };
 
-const validatePasswordUpdate = (data) => {
-  return passwordUpdateSchema.validate(data, { abortEarly: false });
+
+const validateUserUpdateMiddleware = (req, res, next) => {
+  const { currentPassword, newPassword, ...rest } = req.body;
+  // Validate các trường thông thường
+  const { error, value } = validateUserUpdate(rest);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation error',
+      errors: error.details.map(detail => detail.message)
+    });
+  }
+  // Nếu có newPassword thì currentPassword là bắt buộc
+  if (newPassword) {
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is required to change password'
+      });
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 6 || newPassword.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be 6-100 characters long'
+      });
+    }
+    req.body = { ...value, currentPassword, newPassword };
+  } else {
+    req.body = value;
+  }
+  next();
 };
 
 module.exports = {
   validateUserUpdate,
-  validatePasswordUpdate
+  validateUserUpdateMiddleware
 }; 

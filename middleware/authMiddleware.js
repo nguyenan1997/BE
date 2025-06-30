@@ -98,7 +98,7 @@ const authorizeOwnResource = (resourceUserIdField = 'id') => {
     }
 
     const resourceUserId = req.params[resourceUserIdField];
-    const currentUserId = req.currentUser.userId;
+    const currentUserId = req.currentUser.id;
 
     // Allow if user is admin or accessing their own resource
     if (req.currentUser.role === 'admin' || resourceUserId === currentUserId) {

@@ -464,7 +464,11 @@ paths:
     put:
       tags:
         - User Management
-      summary: Update user
+      summary: Update user (có thể đổi mật khẩu)
+      description: |
+        - **User thường** chỉ được update chính mình, không được đổi `role` hoặc `isActive`. Nếu cố tình truyền sẽ bị lỗi 403.
+        - **Admin** có thể update mọi user, bao gồm cả `role` và `isActive`.
+        - **Đổi mật khẩu**: cần truyền cả `currentPassword` và `newPassword` (6-100 ký tự).
       security:
         - bearerAuth: []
       parameters:
@@ -488,6 +492,43 @@ paths:
                   type: string
                   format: email
                   example: "updated@example.com"
+                username:
+                  type: string
+                  example: "newusername"
+                role:
+                  type: string
+                  enum: [user, admin]
+                  example: "user"
+                  description: "Chỉ admin mới có thể thay đổi trường này. User thường truyền vào sẽ bị lỗi 403."
+                isActive:
+                  type: boolean
+                  example: true
+                  description: "Chỉ admin mới có thể thay đổi trường này. User thường truyền vào sẽ bị lỗi 403."
+                currentPassword:
+                  type: string
+                  description: Mật khẩu hiện tại (bắt buộc nếu đổi mật khẩu)
+                  example: "oldpassword123"
+                newPassword:
+                  type: string
+                  description: Mật khẩu mới (bắt buộc nếu đổi mật khẩu, 6-100 ký tự)
+                  example: "newpassword456"
+            examples:
+              Update info only:
+                summary: Update thông tin cá nhân
+                value:
+                  fullName: "Nguyen Van A"
+                  email: "user@gmail.com"
+                  username: "user123"
+              Change password:
+                summary: Đổi mật khẩu
+                value:
+                  currentPassword: "matkhaucu"
+                  newPassword: "matkhaumoi123"
+              Admin update role:
+                summary: Admin đổi quyền user
+                value:
+                  role: "admin"
+                  isActive: false
       responses:
         200:
           description: User updated
@@ -495,6 +536,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
+        400:
+          description: Validation error hoặc mật khẩu hiện tại không đúng
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        403:
+          description: Không có quyền update role hoặc isActive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         404:
           description: User not found
           content:
