@@ -9,9 +9,7 @@
     "test": "jest",
     "setup-fresh-database": "node scripts/setup-fresh-database.js",
     "monitor-tokens": "node scripts/monitorTokens.js monitor",
-    "clear-tokens": "node scripts/monitorTokens.js clear",
-    "test-youtube-oauth": "node scripts/test-youtube-oauth.js",
-    "test-sync-revenue": "node scripts/test-sync-with-revenue.js"
+    "clear-tokens": "node scripts/monitorTokens.js clear"
   },
   "keywords": [
     "nodejs",
