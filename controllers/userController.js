@@ -146,8 +146,15 @@ const deleteUser = async (req, res, next) => {
       });
     }
 
-    // Soft delete by deactivating user
-    await user.update({ isActive: false });
+    if (req.currentUser.id === user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin cannot delete their own account.'
+      });
+    }
+
+    // Prevent deletion of admin user
+    await user.destroy();
 
     res.json({
       success: true,

@@ -23,9 +23,6 @@ components:
           type: string
           format: email
           example: "user@example.com"
-        username:
-          type: string
-          example: "use123"
         password:
           type: string
           example: "password123"
