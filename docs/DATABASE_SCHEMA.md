@@ -29,7 +29,7 @@ users (1) ────┐
 
 ## 2. Chi tiết từng trường của bảng
 
-### Bảng `users`
+### Bảng `users`(Lưu thông tin người dùng hệ thống (tài khoản đăng nhập, email, mật khẩu, tên đầy đủ, vai trò, trạng thái hoạt động, thời gian đăng nhập gần nhất))
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của user (primary key) |
@@ -43,7 +43,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo tài khoản |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `youtube_channels`
+### Bảng `youtube_channels`( Lưu thông tin chi tiết về các kênh YouTube mà người dùng quản lý hoặc theo dõi)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của kênh (primary key) |
@@ -60,7 +60,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian thêm kênh vào hệ thống |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `videos`
+### Bảng `videos`( Lưu thông tin chi tiết về từng video thuộc các kênh YouTube đã lưu)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của video (primary key) |
@@ -75,7 +75,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian thêm video vào hệ thống |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `channel_statistics`
+### Bảng `channel_statistics`(Lưu trữ thống kê tổng quan của kênh YouTube theo từng ngày (hoặc thời điểm lấy dữ liệu))
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của thống kê (primary key) |
@@ -93,7 +93,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo thống kê |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `video_statistics`
+### Bảng `video_statistics`( Lưu thống kê chi tiết của từng video theo từng ngày (hoặc thời điểm lấy dữ liệu))
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của thống kê (primary key) |
@@ -107,7 +107,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo thống kê |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `channel_violations`
+### Bảng `channel_violations`(Lưu các cảnh báo, vi phạm của kênh (ví dụ: vi phạm cộng đồng, vi phạm kiếm tiền))
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của vi phạm (primary key) |
@@ -121,7 +121,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo vi phạm |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `access_tokens`
+### Bảng `access_tokens`(Lưu trữ access token và refresh token dùng để truy cập API YouTube cho từng kênh và từng user)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của token (primary key) |
@@ -135,7 +135,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo token |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `user_schedules`
+### Bảng `user_schedules`(Lưu lịch trình (schedule) của từng user, ví dụ: thời gian hệ thống tự động lấy dữ liệu cho user đó.)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của lịch trình (primary key) |
