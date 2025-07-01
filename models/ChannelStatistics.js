@@ -16,7 +16,7 @@ const ChannelStatistics = sequelize.define('ChannelStatistics', {
     }
   },
   date: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: false
   },
   subscriber_count: {
@@ -47,22 +47,21 @@ const ChannelStatistics = sequelize.define('ChannelStatistics', {
     type: DataTypes.FLOAT,
     allowNull: true
   },
-  view_growth_percent: {
-    type: DataTypes.FLOAT,
-    allowNull: true
+  created_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   },
-  subscriber_growth_percent: {
-    type: DataTypes.FLOAT,
-    allowNull: true
+  updated_at: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'channel_statistics',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: false,
+  timestamps: false,
   indexes: [
-    { fields: ['channel_id'] },
-    { fields: ['date'] }
+    { unique: true, fields: ['channel_id', 'date'] }
   ]
 });
 

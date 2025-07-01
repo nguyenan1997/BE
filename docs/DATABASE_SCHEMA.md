@@ -75,37 +75,40 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian thêm video vào hệ thống |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `channel_statistics`(Lưu trữ thống kê tổng quan của kênh YouTube theo từng ngày (hoặc thời điểm lấy dữ liệu))
-| Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
-|--------|-------------|----------|---------|
-| `id` | UUID | ✅ | ID duy nhất của thống kê (primary key) |
-| `channel_id` | UUID | ✅ | ID của kênh (foreign key) |
-| `date` | DATE | ✅ | Ngày thống kê |
-| `subscriber_count` | INTEGER | ❌ | Số lượng subscriber |
-| `view_count` | BIGINT | ❌ | Tổng số lượt xem |
-| `like_count` | INTEGER | ❌ | Tổng số lượt like |
-| `comment_count` | INTEGER | ❌ | Tổng số comment |
-| `share_count` | INTEGER | ❌ | Tổng số lượt share |
-| `watch_time_minutes` | INTEGER | ❌ | Tổng thời gian xem (phút) |
-| `estimated_revenue` | DECIMAL(10,2) | ❌ | Doanh thu ước tính (USD) |
-| `view_growth_percent` | DECIMAL(5,2) | ❌ | Phần trăm tăng trưởng lượt xem |
-| `subscriber_growth_percent` | DECIMAL(5,2) | ❌ | Phần trăm tăng trưởng subscriber |
-| `created_at` | TIMESTAMP | ❌ | Thời gian tạo thống kê |
-| `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
+### Bảng `channel_statistics` (Lưu trữ thống kê tổng quan của kênh YouTube theo từng ngày, chỉ giữ tối đa 7 ngày gần nhất)
+| Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                                    |
+|--------------------|------------------|----------|--------------------------------------------|
+| `id`               | UUID             | ✅        | ID duy nhất của thống kê (primary key)     |
+| `channel_id`       | UUID             | ✅        | ID của kênh (foreign key)                  |
+| `date`             | DATE             | ✅        | Ngày thống kê                              |
+| `subscriber_count` | INTEGER          | ❌        | Số lượng subscriber                        |
+| `view_count`       | BIGINT           | ❌        | Tổng số lượt xem                           |
+| `like_count`       | INTEGER          | ❌        | Tổng số lượt like                          |
+| `comment_count`    | INTEGER          | ❌        | Tổng số comment                            |
+| `share_count`      | INTEGER          | ❌        | Tổng số lượt share                         |
+| `watch_time_minutes`| INTEGER         | ❌        | Tổng thời gian xem (phút)                  |
+| `estimated_revenue`| DECIMAL(10,2)    | ❌        | Doanh thu ước tính (USD)                   |
+| `created_at`       | TIMESTAMP        | ❌        | Thời gian tạo thống kê                     |
+| `updated_at`       | TIMESTAMP        | ❌        | Thời gian cập nhật cuối                    |
 
-### Bảng `video_statistics`( Lưu thống kê chi tiết của từng video theo từng ngày (hoặc thời điểm lấy dữ liệu))
-| Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
-|--------|-------------|----------|---------|
-| `id` | UUID | ✅ | ID duy nhất của thống kê (primary key) |
-| `video_id` | UUID | ✅ | ID của video (foreign key) |
-| `date` | DATE | ✅ | Ngày thống kê |
-| `view_count` | INTEGER | ❌ | Số lượt xem video |
-| `like_count` | INTEGER | ❌ | Số lượt like video |
-| `comment_count` | INTEGER | ❌ | Số comment video |
-| `share_count` | INTEGER | ❌ | Số lượt share video |
-| `estimated_revenue` | DECIMAL(10,2) | ❌ | Doanh thu ước tính của video (USD) |
-| `created_at` | TIMESTAMP | ❌ | Thời gian tạo thống kê |
-| `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
+> **Ghi chú:** Mỗi ngày mỗi kênh chỉ có 1 bản ghi. Dữ liệu cũ hơn 7 ngày sẽ được xóa định kỳ để giữ bảng luôn gọn nhẹ.
+
+### Bảng `video_statistics` (Lưu thống kê chi tiết của từng video theo từng ngày, chỉ giữ tối đa 7 ngày gần nhất)
+| Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                                    |
+|--------------------|------------------|----------|--------------------------------------------|
+| `id`               | UUID             | ✅        | ID duy nhất của thống kê (primary key)     |
+| `video_id`         | UUID             | ✅        | ID của video (foreign key)                 |
+| `channel_id`       | UUID             | ✅        | ID của kênh chứa video (foreign key)       |
+| `date`             | DATE             | ✅        | Ngày thống kê                              |
+| `view_count`       | INTEGER          | ❌        | Số lượt xem video                          |
+| `like_count`       | INTEGER          | ❌        | Số lượt like video                         |
+| `comment_count`    | INTEGER          | ❌        | Số comment video                           |
+| `share_count`      | INTEGER          | ❌        | Số lượt share video                        |
+| `estimated_revenue`| DECIMAL(10,2)    | ❌        | Doanh thu ước tính của video (USD)         |
+| `created_at`       | TIMESTAMP        | ❌        | Thời gian tạo thống kê                     |
+| `updated_at`       | TIMESTAMP        | ❌        | Thời gian cập nhật cuối                    |
+
+> **Ghi chú:** Mỗi ngày mỗi video chỉ có 1 bản ghi. Dữ liệu cũ hơn 7 ngày sẽ được xóa định kỳ để giữ bảng luôn gọn nhẹ.
 
 ### Bảng `channel_violations`(Lưu các cảnh báo, vi phạm của kênh (ví dụ: vi phạm cộng đồng, vi phạm kiếm tiền))
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
@@ -139,8 +142,4 @@ users (1) ────┐
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của lịch trình (primary key) |
-| `user_id` | UUID | ✅ | ID của user (foreign key) |
-| `time_of_day` | TIME | ✅ | Thời gian trong ngày (format: HH:MM:SS) |
-| `is_active` | BOOLEAN | ❌ | Trạng thái hoạt động (mặc định: true) |
-| `created_at` | TIMESTAMP | ❌ | Thời gian tạo lịch trình |
-| `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối | 
+| `user_id`
