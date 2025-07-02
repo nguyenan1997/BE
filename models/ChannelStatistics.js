@@ -7,7 +7,7 @@ const ChannelStatistics = sequelize.define('ChannelStatistics', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  channel_id: {
+  channel_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -61,7 +61,7 @@ const ChannelStatistics = sequelize.define('ChannelStatistics', {
   tableName: 'channel_statistics',
   timestamps: false,
   indexes: [
-    { unique: true, fields: ['channel_id', 'date'] }
+    { unique: true, fields: ['channel_db_id', 'date'] }
   ]
 });
 

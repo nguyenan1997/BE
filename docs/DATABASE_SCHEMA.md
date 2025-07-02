@@ -8,28 +8,28 @@ users (1) ────┐
               │                                ├── (N) videos (1) ──── (N) video_statistics
               │                                ├── (N) channel_statistics
               │                                ├── (N) channel_violations
-              │                                └── (N) access_tokens
-              └── (N) user_schedules
+              │                                ├── (N) access_tokens
+              │                                └── (N) shared_channels (N) ────┐
+              └── (N) user_schedules         users (N) <───────────────────────┘
 ```
 
 ### Chi tiết mối quan hệ:
 
-- **users → youtube_channels** (1:N): Một user có thể sở hữu nhiều kênh YouTube
+- **users → youtube_channels** (1:N): Một user là chủ sở hữu nhiều kênh YouTube
 - **users → user_schedules** (1:N): Một user có thể có nhiều lịch trình
-- **users → access_tokens** (1:N): Một user có thể có nhiều access token cho các kênh khác nhau
-
 - **youtube_channels → videos** (1:N): Một kênh có thể có nhiều video
 - **youtube_channels → channel_statistics** (1:N): Một kênh có nhiều thống kê theo thời gian
 - **youtube_channels → channel_violations** (1:N): Một kênh có thể có nhiều vi phạm
 - **youtube_channels → access_tokens** (1:N): Một kênh có thể có nhiều access token
-
+- **youtube_channels → shared_channels** (1:N): Một kênh có thể được chia sẻ cho nhiều user khác
+- **users → shared_channels** (1:N): Một user có thể được chia sẻ nhiều kênh (không phải chủ sở hữu)
 - **videos → video_statistics** (1:N): Một video có nhiều thống kê theo thời gian
 
 ---
 
 ## 2. Chi tiết từng trường của bảng
 
-### Bảng `users`(Lưu thông tin người dùng hệ thống (tài khoản đăng nhập, email, mật khẩu, tên đầy đủ, vai trò, trạng thái hoạt động, thời gian đăng nhập gần nhất))
+### Bảng `users` (Lưu thông tin người dùng hệ thống)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của user (primary key) |
@@ -43,7 +43,7 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo tài khoản |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `youtube_channels`( Lưu thông tin chi tiết về các kênh YouTube mà người dùng quản lý hoặc theo dõi)
+### Bảng `youtube_channels` (Lưu thông tin chi tiết về các kênh YouTube)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của kênh (primary key) |
@@ -60,11 +60,21 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian thêm kênh vào hệ thống |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `videos`( Lưu thông tin chi tiết về từng video thuộc các kênh YouTube đã lưu)
+### Bảng `shared_channels` (Lưu thông tin các kênh được chia sẻ cho user khác)
+| Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
+|--------|-------------|----------|---------|
+| `id` | UUID | ✅ | ID duy nhất của bản ghi chia sẻ (primary key) |
+| `channel_db_id` | UUID | ✅ | ID của kênh được chia sẻ (foreign key → youtube_channels.id) |
+| `user_id` | UUID | ✅ | ID của user được chia sẻ (foreign key → users.id) |
+| `permission` | ENUM('read', 'write', 'admin') | ✅ | Quyền hạn của user với kênh được chia sẻ |
+| `created_at` | TIMESTAMP | ❌ | Thời gian chia sẻ |
+| `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
+
+### Bảng `videos` (Lưu thông tin chi tiết về từng video thuộc các kênh YouTube đã lưu)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của video (primary key) |
-| `channel_id` | UUID | ✅ | ID của kênh chứa video (foreign key) |
+| `channel_db_id` | UUID | ✅ | ID của kênh chứa video (foreign key → youtube_channels.id) |
 | `video_id` | VARCHAR | ✅ | ID video YouTube (unique) |
 | `title` | VARCHAR | ✅ | Tiêu đề video |
 | `description` | TEXT | ❌ | Mô tả video |
@@ -79,7 +89,7 @@ users (1) ────┐
 | Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                                    |
 |--------------------|------------------|----------|--------------------------------------------|
 | `id`               | UUID             | ✅        | ID duy nhất của thống kê (primary key)     |
-| `channel_id`       | UUID             | ✅        | ID của kênh (foreign key)                  |
+| `channel_db_id`    | UUID             | ✅        | ID của kênh (foreign key → youtube_channels.id) |
 | `date`             | DATE             | ✅        | Ngày thống kê                              |
 | `subscriber_count` | INTEGER          | ❌        | Số lượng subscriber                        |
 | `view_count`       | BIGINT           | ❌        | Tổng số lượt xem                           |
@@ -97,8 +107,7 @@ users (1) ────┐
 | Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                                    |
 |--------------------|------------------|----------|--------------------------------------------|
 | `id`               | UUID             | ✅        | ID duy nhất của thống kê (primary key)     |
-| `video_id`         | UUID             | ✅        | ID của video (foreign key)                 |
-| `channel_id`       | UUID             | ✅        | ID của kênh chứa video (foreign key)       |
+| `video_db_id`      | UUID             | ✅        | ID của video (foreign key → videos.id)     |
 | `date`             | DATE             | ✅        | Ngày thống kê                              |
 | `view_count`       | INTEGER          | ❌        | Số lượt xem video                          |
 | `like_count`       | INTEGER          | ❌        | Số lượt like video                         |
@@ -110,11 +119,11 @@ users (1) ────┐
 
 > **Ghi chú:** Mỗi ngày mỗi video chỉ có 1 bản ghi. Dữ liệu cũ hơn 7 ngày sẽ được xóa định kỳ để giữ bảng luôn gọn nhẹ.
 
-### Bảng `channel_violations`(Lưu các cảnh báo, vi phạm của kênh (ví dụ: vi phạm cộng đồng, vi phạm kiếm tiền))
+### Bảng `channel_violations` (Lưu các cảnh báo, vi phạm của kênh)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của vi phạm (primary key) |
-| `channel_id` | UUID | ✅ | ID của kênh (foreign key) |
+| `channel_db_id` | UUID | ✅ | ID của kênh (foreign key → youtube_channels.id) |
 | `violation_type` | ENUM('monetization', 'community') | ✅ | Loại vi phạm |
 | `title` | VARCHAR | ✅ | Tiêu đề vi phạm |
 | `description` | TEXT | ❌ | Mô tả chi tiết vi phạm |
@@ -124,12 +133,11 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo vi phạm |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `access_tokens`(Lưu trữ access token và refresh token dùng để truy cập API YouTube cho từng kênh và từng user)
+### Bảng `access_tokens` (Lưu trữ access token và refresh token dùng để truy cập API YouTube cho từng kênh)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của token (primary key) |
-| `user_id` | UUID | ✅ | ID của user (foreign key) |
-| `channel_id` | UUID | ✅ | ID của kênh (foreign key) |
+| `channel_db_id` | UUID | ✅ | ID của kênh (foreign key → youtube_channels.id) |
 | `access_token` | TEXT | ✅ | Access token cho YouTube API |
 | `refresh_token` | TEXT | ✅ | Refresh token để làm mới access token |
 | `scope` | TEXT | ✅ | Phạm vi quyền truy cập |
@@ -138,8 +146,12 @@ users (1) ────┐
 | `created_at` | TIMESTAMP | ❌ | Thời gian tạo token |
 | `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |
 
-### Bảng `user_schedules`(Lưu lịch trình (schedule) của từng user, ví dụ: thời gian hệ thống tự động lấy dữ liệu cho user đó.)
+### Bảng `user_schedules` (Lưu lịch trình (schedule) của từng user)
 | Trường | Kiểu dữ liệu | Bắt buộc | Ý nghĩa |
 |--------|-------------|----------|---------|
 | `id` | UUID | ✅ | ID duy nhất của lịch trình (primary key) |
-| `user_id`
+| `user_id` | UUID | ✅ | ID của user (foreign key) |
+| `time_of_day` | TIME | ✅ | Thời gian thực hiện schedule |
+| `is_active` | BOOLEAN | ✅ | Lịch trình còn hiệu lực |
+| `created_at` | TIMESTAMP | ❌ | Thời gian tạo |
+| `updated_at` | TIMESTAMP | ❌ | Thời gian cập nhật cuối |

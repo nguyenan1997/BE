@@ -1,12 +1,12 @@
 const { createYouTubeAnalyticsClient, refreshAccessToken } = require('../config/youtube');
-const { AccessToken } = require('../models');
+const { GoogleAccessToken } = require('../models');
 
 // Get channel revenue data
 const getChannelRevenue = async (userId, channelId, startDate, endDate) => {
   try {
     // Get user's access token
-    const tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true }
+    const tokenRecord = await GoogleAccessToken.findOne({
+      where: { channel_db_id: channelId, is_active: true }
     });
 
     if (!tokenRecord) {
@@ -74,8 +74,8 @@ const getChannelRevenue = async (userId, channelId, startDate, endDate) => {
 const getVideoRevenue = async (userId, videoId, startDate, endDate) => {
   try {
     // Get user's access token
-    const tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true }
+    const tokenRecord = await GoogleAccessToken.findOne({
+      where: { channel_db_id: videoId, is_active: true }
     });
 
     if (!tokenRecord) {
@@ -143,8 +143,8 @@ const getVideoRevenue = async (userId, videoId, startDate, endDate) => {
 const getAggregatedRevenue = async (userId, ids, startDate, endDate, groupBy = 'channel') => {
   try {
     // Get user's access token
-    const tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true }
+    const tokenRecord = await GoogleAccessToken.findOne({
+      where: { channel_db_id: ids[0], is_active: true }
     });
 
     if (!tokenRecord) {

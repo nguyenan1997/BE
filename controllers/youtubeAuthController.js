@@ -1,9 +1,20 @@
 const { generateAuthUrl, exchangeCodeForTokens, refreshAccessToken } = require('../config/youtube');
-const { AccessToken, YouTubeChannel } = require('../models');
+const { GoogleAccessToken, YouTubeChannel } = require('../models');
 const jwt = require('jsonwebtoken');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 require('dotenv').config();
 
+/**
+ * @swagger
+ * /api/youtube-auth/url:
+ *   get:
+ *     summary: Lấy URL xác thực OAuth2 YouTube
+ *     tags: [YouTube Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: URL xác thực
+ */
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
   try {
@@ -26,13 +37,26 @@ const getAuthUrl = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/refresh:
+ *   post:
+ *     summary: Làm mới access token YouTube
+ *     tags: [YouTube Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Làm mới thành công
+ *       404:
+ *         description: Không tìm thấy refresh token
+ */
 // Refresh access token
 const refreshToken = async (req, res) => {
   try {
     const userId = req.currentUser.userId;
 
     // Get user's refresh token
-    const tokenRecord = await AccessToken.findOne({
+    const tokenRecord = await GoogleAccessToken.findOne({
       where: { user_id: userId, is_active: true }
     });
 
@@ -81,12 +105,23 @@ const refreshToken = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/status:
+ *   get:
+ *     summary: Lấy trạng thái xác thực YouTube của user
+ *     tags: [YouTube Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Trạng thái xác thực
+ */
 // Get user's YouTube authorization status
 const getAuthStatus = async (req, res) => {
   try {
     const userId = req.currentUser.userId;
 
-    const tokenRecord = await AccessToken.findOne({
+    const tokenRecord = await GoogleAccessToken.findOne({
       where: { user_id: userId, is_active: true }
     });
 
@@ -121,13 +156,24 @@ const getAuthStatus = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/revoke:
+ *   post:
+ *     summary: Thu hồi quyền truy cập YouTube
+ *     tags: [YouTube Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Thu hồi thành công
+ */
 // Revoke YouTube authorization
 const revokeAuth = async (req, res) => {
   try {
     const userId = req.currentUser.userId;
 
     // Deactivate all tokens for user
-    await AccessToken.update(
+    await GoogleAccessToken.update(
       { is_active: false },
       { where: { user_id: userId } }
     );
@@ -147,6 +193,16 @@ const revokeAuth = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/callback:
+ *   get:
+ *     summary: Callback OAuth2 từ Google (chỉ redirect về frontend, không dùng trực tiếp)
+ *     tags: [YouTube Auth]
+ *     responses:
+ *       302:
+ *         description: Redirect về frontend
+ */
 // Callback chỉ redirect về frontend
 const handleCallbackAndRedirect = (req, res) => {
   const { code } = req.query;
@@ -154,6 +210,29 @@ const handleCallbackAndRedirect = (req, res) => {
   res.redirect(`${frontendUrl}/oauth-success?code=${code}`);
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/finish-oauth:
+ *   post:
+ *     summary: Hoàn tất xác thực OAuth2, lưu token và đồng bộ kênh (frontend gọi)
+ *     tags: [YouTube Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code: { type: string }
+ *     responses:
+ *       200:
+ *         description: Hoàn tất xác thực và đồng bộ kênh thành công
+ *       400:
+ *         description: Lỗi xác thực hoặc không tìm thấy kênh
+ *       401:
+ *         description: Thiếu userId từ JWT
+ */
 // Xử lý thực sự: nhận code từ frontend, userId từ JWT
 const finishOAuth = async (req, res) => {
   try {

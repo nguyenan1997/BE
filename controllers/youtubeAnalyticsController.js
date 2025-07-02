@@ -4,6 +4,42 @@ const {
   getAggregatedRevenue 
 } = require('../services/youtubeAnalyticsService');
 
+/**
+ * @swagger
+ * /api/youtube-analytics/channel-revenue:
+ *   get:
+ *     summary: Lấy doanh thu kênh theo khoảng thời gian
+ *     tags: [YouTube Analytics]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: channelId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Dữ liệu doanh thu kênh
+ *       400:
+ *         description: Thiếu tham số hoặc lỗi
+ */
 // Get channel revenue data
 const getChannelRevenueData = async (req, res) => {
   try {
@@ -41,6 +77,42 @@ const getChannelRevenueData = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-analytics/video-revenue:
+ *   get:
+ *     summary: Lấy doanh thu video theo khoảng thời gian
+ *     tags: [YouTube Analytics]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: videoId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Dữ liệu doanh thu video
+ *       400:
+ *         description: Thiếu tham số hoặc lỗi
+ */
 // Get video revenue data
 const getVideoRevenueData = async (req, res) => {
   try {
@@ -78,6 +150,52 @@ const getVideoRevenueData = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-analytics/aggregated-revenue:
+ *   get:
+ *     summary: Lấy doanh thu tổng hợp (group by channel/video) theo khoảng thời gian
+ *     tags: [YouTube Analytics]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: ids
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Danh sách channelId hoặc videoId, phân tách bằng dấu phẩy
+ *       - in: query
+ *         name: startDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: endDate
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: groupBy
+ *         description: Nhóm theo kênh hoặc video (mặc định: channel)
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - channel
+ *             - video
+ *     responses:
+ *       200:
+ *         description: Dữ liệu doanh thu tổng hợp
+ *       400:
+ *         description: Thiếu tham số hoặc lỗi
+ */
 // Get aggregated revenue data
 const getAggregatedRevenueData = async (req, res) => {
   try {

@@ -7,7 +7,7 @@ const VideoStatistics = sequelize.define('VideoStatistics', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  video_id: {
+  video_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -51,7 +51,7 @@ const VideoStatistics = sequelize.define('VideoStatistics', {
   tableName: 'video_statistics',
   timestamps: false,
   indexes: [
-    { unique: true, fields: ['video_id', 'date'] }
+    { unique: true, fields: ['video_db_id', 'date'] }
   ]
 });
 

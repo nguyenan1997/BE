@@ -7,7 +7,7 @@ const Video = sequelize.define('Video', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  channel_id: {
+  channel_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -49,7 +49,7 @@ const Video = sequelize.define('Video', {
   createdAt: 'created_at',
   updatedAt: false,
   indexes: [
-    { fields: ['channel_id'] },
+    { fields: ['channel_db_id'] },
     { fields: ['video_id'] },
     { fields: ['published_at'] }
   ]

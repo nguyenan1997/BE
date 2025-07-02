@@ -5,7 +5,7 @@ const {
   ChannelStatistics,
   Video,
   VideoStatistics,
-  AccessToken,
+  GoogleAccessToken,
 } = require("../models");
 const {
   refreshAccessToken,
@@ -45,8 +45,8 @@ async function syncYouTubeChannelData({
 
   // Lấy access token từ database nếu không cung cấp
   if (!accessToken) {
-    const tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, is_active: true, channel_db_id: channelId },
+    const tokenRecord = await GoogleAccessToken.findOne({
+      where: { channel_db_id: channelId, is_active: true },
     });
 
     if (!tokenRecord) {
@@ -114,8 +114,8 @@ async function syncYouTubeChannelData({
 
   // --- Update/create AccessToken nếu accessToken được truyền vào ---
   if (accessToken) {
-    let tokenRecord = await AccessToken.findOne({
-      where: { user_id: userId, channel_db_id: channelDbId, is_active: true },
+    let tokenRecord = await GoogleAccessToken.findOne({
+      where: { channel_db_id: channelDbId, is_active: true },
     });
     if (tokenRecord) {
       await tokenRecord.update({
@@ -127,8 +127,7 @@ async function syncYouTubeChannelData({
         is_active: true,
       });
     } else {
-      await AccessToken.create({
-        user_id: userId,
+      await GoogleAccessToken.create({
         channel_db_id: channelDbId,
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -172,7 +171,7 @@ async function syncYouTubeChannelData({
       data[header.name] = row[idx];
     });
     await ChannelStatistics.upsert({
-      channel_id: channelDbId,
+      channel_db_id: channelDbId,
       date: data.day,
       subscriber_count: (data.subscribersGained != null && data.subscribersLost != null) ? (data.subscribersGained - data.subscribersLost) : null,
       view_count: data.views || null,
@@ -226,7 +225,7 @@ async function syncYouTubeChannelData({
 
     for (const v of videosRes.data.items) {
       const dbVideo = await Video.upsert({
-        channel_id: channelDbId,
+        channel_db_id: channelDbId,
         video_id: v.id,
         title: safe(v, "snippet.title"),
         description: safe(v, "snippet.description"),
@@ -272,7 +271,7 @@ async function syncYouTubeChannelData({
           data[header.name] = row[idx];
         });
         await VideoStatistics.upsert({
-          video_id: videoDbId,
+          video_db_id: videoDbId,
           date: data.day,
           view_count: data.views || null,
           estimated_revenue: data.estimatedRevenue || null,
@@ -310,7 +309,7 @@ async function syncRevenueData({
   endDate,
 }) {
   // Lấy access token
-  const tokenRecord = await AccessToken.findOne({
+  const tokenRecord = await GoogleAccessToken.findOne({
     where: { user_id: userId, is_active: true, channel_db_id: channelId },
   });
 

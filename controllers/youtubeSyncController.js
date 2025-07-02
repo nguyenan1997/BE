@@ -1,5 +1,29 @@
 const { syncYouTubeChannelData, syncRevenueData } = require('../services/youtubeSyncService');
 
+/**
+ * @swagger
+ * /api/youtube-sync/channel:
+ *   post:
+ *     summary: Đồng bộ toàn bộ dữ liệu kênh (bao gồm revenue)
+ *     tags: [YouTube Sync]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               userId:
+ *                 type: string
+ *               channelId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Đồng bộ thành công
+ *       400:
+ *         description: Thiếu tham số hoặc lỗi
+ */
 // Sync toàn bộ dữ liệu kênh (bao gồm revenue)
 const syncChannelData = async (req, res) => {
   try {
@@ -72,7 +96,6 @@ const syncRevenueDataForPeriod = async (req, res) => {
     });
   }
 };
-
 // Sync revenue data cho tất cả kênh của user
 const syncAllUserChannelsRevenue = async (req, res) => {
   try {
@@ -146,7 +169,6 @@ const syncAllUserChannelsRevenue = async (req, res) => {
     });
   }
 };
-
 // Get sync status và thống kê
 const getSyncStatus = async (req, res) => {
   try {
