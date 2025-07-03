@@ -6,14 +6,30 @@ require('dotenv').config();
 
 /**
  * @swagger
- * /api/youtube-auth/url:
- *   get:
+ * /api/youtube-auth/auth-url:
+ *   post:
  *     summary: Lấy URL xác thực OAuth2 YouTube
- *     tags: [YouTube Auth]
+ *     tags: [YouTube OAuth]
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
  *         description: URL xác thực
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 authUrl:
+ *                   type: string
+ *                   example: "https://accounts.google.com/o/oauth2/auth?..."
+ *                 message:
+ *                   type: string
+ *                   example: "Authorization URL generated successfully"
+ *       401:
+ *         description: Unauthorized
  */
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
@@ -36,20 +52,6 @@ const getAuthUrl = async (req, res) => {
     });
   }
 };
-
-/**
- * @swagger
- * /api/youtube-auth/refresh:
- *   post:
- *     summary: Làm mới access token YouTube
- *     tags: [YouTube Auth]
- *     security: [{ bearerAuth: [] }]
- *     responses:
- *       200:
- *         description: Làm mới thành công
- *       404:
- *         description: Không tìm thấy refresh token
- */
 // Refresh access token
 const refreshToken = async (req, res) => {
   try {
@@ -192,17 +194,6 @@ const revokeAuth = async (req, res) => {
     });
   }
 };
-
-/**
- * @swagger
- * /api/youtube-auth/callback:
- *   get:
- *     summary: Callback OAuth2 từ Google (chỉ redirect về frontend, không dùng trực tiếp)
- *     tags: [YouTube Auth]
- *     responses:
- *       302:
- *         description: Redirect về frontend
- */
 // Callback chỉ redirect về frontend
 const handleCallbackAndRedirect = (req, res) => {
   const { code } = req.query;
@@ -212,10 +203,10 @@ const handleCallbackAndRedirect = (req, res) => {
 
 /**
  * @swagger
- * /api/youtube-auth/finish-oauth:
+ * /api/youtube-auth/finish:
  *   post:
  *     summary: Hoàn tất xác thực OAuth2, lưu token và đồng bộ kênh (frontend gọi)
- *     tags: [YouTube Auth]
+ *     tags: [YouTube OAuth]
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -228,6 +219,20 @@ const handleCallbackAndRedirect = (req, res) => {
  *     responses:
  *       200:
  *         description: Hoàn tất xác thực và đồng bộ kênh thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "YouTube authorization & sync successful"
+ *                 syncResult:
+ *                   type: object
+ *                   description: Sync result details
  *       400:
  *         description: Lỗi xác thực hoặc không tìm thấy kênh
  *       401:

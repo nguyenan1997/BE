@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database').sequelize;
 
-const SharedChannel = sequelize.define('SharedChannel', {
+const UserChannel = sequelize.define('UserChannel', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
@@ -26,9 +26,9 @@ const SharedChannel = sequelize.define('SharedChannel', {
     defaultValue: true,
   },
 }, {
-  tableName: 'shared_channels',
+  tableName: 'user_channel',
   underscored: true,
   timestamps: true,
 });
 
-module.exports = SharedChannel; 
+module.exports = UserChannel; 

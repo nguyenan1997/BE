@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { 
   syncChannelData,
-  getSyncStatus 
+  getSyncStatus,
+  refreshAllChannelData
 } = require('../controllers/youtubeSyncController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
@@ -10,5 +11,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 router.post('/channel', authenticateToken, syncChannelData);
 // Get sync status và thống kê
 router.get('/status', authenticateToken, getSyncStatus);
+// Refresh channel data on demand
+router.post('/refresh', authenticateToken, refreshAllChannelData);
 
 module.exports = router; 

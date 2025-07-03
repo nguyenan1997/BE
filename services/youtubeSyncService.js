@@ -26,6 +26,7 @@ const {
 async function syncYouTubeChannelData({
   userId,
   channelId,
+  channelDbId = null,
   accessToken = null,
   refreshToken = null,
   scope = null,
@@ -43,10 +44,16 @@ async function syncYouTubeChannelData({
     }
   };
 
+  // Nếu chưa có channelDbId, tra cứu từ DB
+  if (!channelDbId) {
+    const dbChannel = await YouTubeChannel.findOne({ where: { channel_id: channelId } });
+    channelDbId = dbChannel ? dbChannel.id : null;
+  }
+
   // Lấy access token từ database nếu không cung cấp
   if (!accessToken) {
     const tokenRecord = await GoogleAccessToken.findOne({
-      where: { channel_db_id: channelId, is_active: true },
+      where: { channel_db_id: channelDbId, is_active: true },
     });
 
     if (!tokenRecord) {
@@ -96,7 +103,6 @@ async function syncYouTubeChannelData({
 
   // 2. Lưu vào bảng youtube_channels
   const dbChannel = await YouTubeChannel.upsert({
-    user_id: userId,
     channel_id: channel.id,
     channel_title: safe(channel, "snippet.title"),
     channel_description: safe(channel, "snippet.description"),
@@ -110,7 +116,21 @@ async function syncYouTubeChannelData({
     is_monitized: null,
   });
 
-  const channelDbId = dbChannel[0].id || dbChannel.id;
+  channelDbId = dbChannel[0].id || dbChannel.id;
+
+  // --- Tạo liên kết user-channel nếu chưa có ---
+  const UserChannel = require("../models/UserChannel");
+  const existingLink = await UserChannel.findOne({
+    where: { user_id: userId, channel_db_id: channelDbId }
+  });
+  if (!existingLink) {
+    await UserChannel.create({
+      user_id: userId,
+      channel_db_id: channelDbId,
+      is_owner: true,
+      is_active: true
+    });
+  }
 
   // --- Update/create AccessToken nếu accessToken được truyền vào ---
   if (accessToken) {
@@ -142,6 +162,7 @@ async function syncYouTubeChannelData({
   // 3. Lấy thống kê từng ngày cho kênh trong 7 ngày gần nhất
   let channelStatsRows = [];
   let channelStatsHeaders = [];
+  let analyticsError = null;
   try {
     const analyticsClient = createYouTubeAnalyticsClient(accessToken);
     const endDate = new Date().toISOString().split("T")[0];
@@ -157,30 +178,35 @@ async function syncYouTubeChannelData({
       dimensions: "day",
       sort: "day",
     });
-    console.log('ChannelStatsRes:', channelStatsRes.data);
     channelStatsRows = channelStatsRes.data.rows || [];
     channelStatsHeaders = channelStatsRes.data.columnHeaders || [];
   } catch (error) {
-    console.warn("Failed to get channel statistics:", error.message);
+    if (error.code === 403 || (error.response && error.response.status === 403)) {
+      analyticsError = "YouTube channel is not eligible for analytics or monetization. Please check if the channel is monetized and you have the correct permissions.";
+    } else {
+      throw error;
+    }
   }
 
   // 4. Lưu thống kê từng ngày vào channel_statistics (mapping động theo header)
-  for (const row of channelStatsRows) {
-    const data = {};
-    channelStatsHeaders.forEach((header, idx) => {
-      data[header.name] = row[idx];
-    });
-    await ChannelStatistics.upsert({
-      channel_db_id: channelDbId,
-      date: data.day,
-      subscriber_count: (data.subscribersGained != null && data.subscribersLost != null) ? (data.subscribersGained - data.subscribersLost) : null,
-      view_count: data.views || null,
-      like_count: data.likes || null,
-      comment_count: data.comments || null,
-      share_count: data.shares || null,
-      watch_time_minutes: data.estimatedMinutesWatched || null,
-      estimated_revenue: data.estimatedRevenue || null,
-    });
+  if (!analyticsError && channelStatsRows.length > 0) {
+    for (const row of channelStatsRows) {
+      const data = {};
+      channelStatsHeaders.forEach((header, idx) => {
+        data[header.name] = row[idx];
+      });
+      await ChannelStatistics.upsert({
+        channel_db_id: channelDbId,
+        date: data.day,
+        subscriber_count: (data.subscribersGained != null && data.subscribersLost != null) ? (data.subscribersGained - data.subscribersLost) : null,
+        view_count: data.views,
+        like_count: data.likes,
+        comment_count: data.comments,
+        share_count: data.shares,
+        watch_time_minutes: data.estimatedMinutesWatched,
+        estimated_revenue: data.estimatedRevenue,
+      });
+    }
   }
 
   // 5. Lấy danh sách videoId của kênh (playlist uploads)
@@ -224,71 +250,101 @@ async function syncYouTubeChannelData({
     );
 
     for (const v of videosRes.data.items) {
-      const dbVideo = await Video.upsert({
-        channel_db_id: channelDbId,
-        video_id: v.id,
-        title: safe(v, "snippet.title"),
-        description: safe(v, "snippet.description"),
-        published_at: safe(v, "snippet.publishedAt"),
-        thumbnail_url:
-          safe(v, "snippet.thumbnails.high.url") ||
-          safe(v, "snippet.thumbnails.default.url"),
-        duration: safe(v, "contentDetails.duration"),
-        privacy_status: safe(v, "status.privacyStatus"),
+      // Kiểm tra video đã tồn tại chưa
+      const existingVideo = await Video.findOne({
+        where: { channel_db_id: channelDbId, video_id: v.id }
       });
-
-      const videoDbId = dbVideo[0].id || dbVideo.id;
-
-      // Lấy thống kê từng ngày cho video trong 7 ngày gần nhất
-      let videoStatsRows = [];
-      let videoStatsHeaders = [];
-      try {
-        const analyticsClient = createYouTubeAnalyticsClient(accessToken);
-        const endDate = new Date().toISOString().split("T")[0];
-        const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0];
-
-        const videoStatsRes = await analyticsClient.reports.query({
-          ids: `channel==${channelId}`,
-          filters: `video==${v.id}`,
-          startDate,
-          endDate,
-          metrics: "views,estimatedRevenue,likes,comments,shares,estimatedMinutesWatched",
-          dimensions: "day",
-          sort: "day",
+      let videoDbId;
+      if (existingVideo) {
+        videoDbId = existingVideo.id;
+        await existingVideo.update({
+          title: safe(v, "snippet.title"),
+          description: safe(v, "snippet.description"),
+          published_at: safe(v, "snippet.publishedAt"),
+          thumbnail_url:
+            safe(v, "snippet.thumbnails.high.url") ||
+            safe(v, "snippet.thumbnails.default.url"),
+          duration: safe(v, "contentDetails.duration"),
+          privacy_status: safe(v, "status.privacyStatus"),
         });
-        console.log('VideoStatsRes:', videoStatsRes.data);
-        videoStatsRows = videoStatsRes.data.rows || [];
-        videoStatsHeaders = videoStatsRes.data.columnHeaders || [];
-      } catch (error) {
-        console.warn(`Failed to get statistics for video ${v.id}:`, error.message);
+      } else {
+        await Video.create({
+          channel_db_id: channelDbId,
+          video_id: v.id,
+          title: safe(v, "snippet.title"),
+          description: safe(v, "snippet.description"),
+          published_at: safe(v, "snippet.publishedAt"),
+          thumbnail_url:
+            safe(v, "snippet.thumbnails.high.url") ||
+            safe(v, "snippet.thumbnails.default.url"),
+          duration: safe(v, "contentDetails.duration"),
+          privacy_status: safe(v, "status.privacyStatus"),
+        });
+        // Luôn lấy lại bản ghi từ DB để lấy UUID
+        const createdVideo = await Video.findOne({
+          where: { channel_db_id: channelDbId, video_id: v.id }
+        });
+        videoDbId = createdVideo.id;
       }
 
-      for (const row of videoStatsRows) {
-        const data = {};
-        videoStatsHeaders.forEach((header, idx) => {
-          data[header.name] = row[idx];
-        });
-        await VideoStatistics.upsert({
-          video_db_id: videoDbId,
-          date: data.day,
-          view_count: data.views || null,
-          estimated_revenue: data.estimatedRevenue || null,
-          like_count: data.likes || null,
-          comment_count: data.comments || null,
-          share_count: data.shares || null,
-          watch_time_minutes: data.estimatedMinutesWatched || null,
-        });
+      // Nếu có analytics, lưu vào video_statistics
+      if (!analyticsError) {
+        // Lấy thống kê từng ngày cho video trong 7 ngày gần nhất
+        let videoStatsRows = [];
+        let videoStatsHeaders = [];
+        try {
+          const analyticsClient = createYouTubeAnalyticsClient(accessToken);
+          const endDate = new Date().toISOString().split("T")[0];
+          const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0];
+
+          const videoStatsRes = await analyticsClient.reports.query({
+            ids: `channel==${channelId}`,
+            filters: `video==${v.id}`,
+            startDate,
+            endDate,
+            metrics: "views,estimatedRevenue,likes,comments,shares,estimatedMinutesWatched",
+            dimensions: "day",
+            sort: "day",
+          });
+          videoStatsRows = videoStatsRes.data.rows || [];
+          videoStatsHeaders = videoStatsRes.data.columnHeaders || [];
+        } catch (error) {
+          if (error.code === 403 || (error.response && error.response.status === 403)) {
+            throw new Error("YouTube video is not eligible for analytics or monetization. Please check if the channel is monetized and you have the correct permissions.");
+          }
+          throw error;
+        }
+
+        for (const row of videoStatsRows) {
+          const data = {};
+          videoStatsHeaders.forEach((header, idx) => {
+            data[header.name] = row[idx];
+          });
+          await VideoStatistics.upsert({
+            video_db_id: videoDbId,
+            date: data.day,
+            view_count: data.views,
+            estimated_revenue: data.estimatedRevenue,
+            like_count: data.likes,
+            comment_count: data.comments,
+            share_count: data.shares,
+            watch_time_minutes: data.estimatedMinutesWatched,
+          });
+        }
       }
     }
   }
 
   return {
-    success: true,
+    success: !analyticsError,
+    analyticsError,
+    message: analyticsError
+      ? "Channel not eligible for analytics, but videos have been saved."
+      : "YouTube data synced successfully with revenue data",
     channelRevenue: channelStatsRows.reduce((sum, row) => sum + (row[1] || 0), 0),
     videosProcessed: videoIds.length,
-    message: "YouTube data synced successfully with revenue data",
   };
 }
 
