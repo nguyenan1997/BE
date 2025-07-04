@@ -109,6 +109,10 @@ async function syncYouTubeChannelData({
   const channel = channelRes.data.items[0];
   if (!channel) throw new Error("Not found YouTube channel with ID: " + channelId);
 
+  // Lấy tổng view và tổng sub hiện tại
+  const totalViewCount = Number(channel.statistics.viewCount);
+  const totalSubscriberCount = Number(channel.statistics.subscriberCount);
+
   // 2. Lưu vào bảng youtube_channels
   const dbChannel = await YouTubeChannel.upsert({
     channel_id: channel.id,
@@ -122,6 +126,8 @@ async function syncYouTubeChannelData({
     channel_creation_date: safe(channel, "snippet.publishedAt"),
     is_verified: null, 
     is_monitized: null,
+    total_view_count: totalViewCount,
+    total_subscriber_count: totalSubscriberCount,
   });
 
   channelDbId = dbChannel[0].id || dbChannel.id;

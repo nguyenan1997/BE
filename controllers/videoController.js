@@ -29,6 +29,32 @@ const { getVideosOfChannel, fetchVideoStatistics } = require('../services/videoS
  *         created_at:
  *           type: string
  *           format: date-time
+ *     VideoStatistics:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         video_db_id:
+ *           type: string
+ *         date:
+ *           type: string
+ *           format: date
+ *         view_count:
+ *           type: integer
+ *         like_count:
+ *           type: integer
+ *         comment_count:
+ *           type: integer
+ *         share_count:
+ *           type: integer
+ *         watch_time_minutes:
+ *           type: integer
+ *         estimated_revenue:
+ *           type: number
+ *           format: float
+ *         created_at:
+ *           type: string
+ *           format: date-time
  *     YouTubeChannel:
  *       type: object
  *       properties:
