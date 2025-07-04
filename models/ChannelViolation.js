@@ -7,7 +7,7 @@ const ChannelViolation = sequelize.define('ChannelViolation', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  channel_id: {
+  channel_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -46,7 +46,7 @@ const ChannelViolation = sequelize.define('ChannelViolation', {
   createdAt: 'created_at',
   updatedAt: false,
   indexes: [
-    { fields: ['channel_id'] },
+    { fields: ['channel_db_id'] },
     { fields: ['violation_type'] },
     { fields: ['status'] }
   ]

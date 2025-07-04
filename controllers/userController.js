@@ -3,6 +3,27 @@ const { validateUserUpdate } = require('../validators/userValidator');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Lấy danh sách user (chỉ admin, phân trang)
+ *     description: Chỉ admin mới có quyền lấy danh sách tất cả user.
+ *     tags: [User]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Danh sách user
+ *       403:
+ *         description: Không có quyền truy cập
+ */
 // Get all users (with pagination)
 const getAllUsers = async (req, res, next) => {
   try {
@@ -35,6 +56,27 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Lấy thông tin user theo ID (admin hoặc chính user)
+ *     description: Admin hoặc chính user mới có quyền xem thông tin user này.
+ *     tags: [User]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Thông tin user
+ *       403:
+ *         description: Không có quyền truy cập
+ *       404:
+ *         description: Không tìm thấy user
+ */
 // Get user by ID
 const getUserById = async (req, res, next) => {
   try {
@@ -60,6 +102,33 @@ const getUserById = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Cập nhật user (admin hoặc chính user)
+ *     description: Admin có thể cập nhật mọi user. User thường chỉ được cập nhật thông tin của chính mình.
+ *     tags: [User]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       403:
+ *         description: Không có quyền cập nhật
+ *       404:
+ *         description: Không tìm thấy user
+ */
 // Update user
 const updateUser = async (req, res, next) => {
   try {
@@ -139,6 +208,27 @@ const updateUser = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Xóa user (chỉ admin)
+ *     description: Chỉ admin mới có quyền xóa user. Admin không thể tự xóa chính mình.
+ *     tags: [User]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Xóa thành công
+ *       403:
+ *         description: Không có quyền xóa
+ *       404:
+ *         description: Không tìm thấy user
+ */
 // Delete user
 const deleteUser = async (req, res, next) => {
   try {
@@ -172,6 +262,27 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/users/{id}/toggle-status:
+ *   post:
+ *     summary: Bật/tắt trạng thái hoạt động của user (chỉ admin)
+ *     description: Chỉ admin mới có quyền bật/tắt trạng thái hoạt động của user. Admin không thể tự vô hiệu hóa chính mình.
+ *     tags: [User]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Đổi trạng thái thành công
+ *       403:
+ *         description: Không có quyền thay đổi trạng thái
+ *       404:
+ *         description: Không tìm thấy user
+ */
 // Toggle user status
 const toggleUserStatus = async (req, res, next) => {
   try {
@@ -208,6 +319,25 @@ const toggleUserStatus = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/users/search:
+ *   get:
+ *     summary: Tìm kiếm user theo tên/email (chỉ admin)
+ *     description: Chỉ admin mới có quyền tìm kiếm user.
+ *     tags: [User]
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema: { type: string }
+ *         description: Từ khóa tìm kiếm
+ *     responses:
+ *       200:
+ *         description: Kết quả tìm kiếm user
+ *       403:
+ *         description: Không có quyền tìm kiếm
+ */
 // Search users
 const searchUsers = async (req, res, next) => {
   try {

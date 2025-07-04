@@ -4,28 +4,9 @@ const ChannelStatistics = require('./ChannelStatistics');
 const ChannelViolation = require('./ChannelViolation');
 const Video = require('./Video');
 const VideoStatistics = require('./VideoStatistics');
-const AccessToken = require('./AccessToken');
+const GoogleAccessToken = require('./GoogleAccessToken');
 const UserSchedule = require('./UserSchedule');
-
-// User 1-n YouTubeChannel
-User.hasMany(YouTubeChannel, {
-  foreignKey: 'user_id',
-  as: 'youtube_channels'
-});
-YouTubeChannel.belongsTo(User, {
-  foreignKey: 'user_id',
-  as: 'user'
-});
-
-// User 1-n AccessToken
-User.hasMany(AccessToken, {
-  foreignKey: 'user_id',
-  as: 'access_tokens'
-});
-AccessToken.belongsTo(User, {
-  foreignKey: 'user_id',
-  as: 'user'
-});
+const UserChannel = require('./UserChannel');
 
 // User 1-1 UserSchedule
 User.hasOne(UserSchedule, {
@@ -39,53 +20,59 @@ UserSchedule.belongsTo(User, {
 
 // YouTubeChannel 1-n ChannelStatistics
 YouTubeChannel.hasMany(ChannelStatistics, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'channel_statistics'
 });
 ChannelStatistics.belongsTo(YouTubeChannel, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'youtube_channel'
 });
 
 // YouTubeChannel 1-n ChannelViolation
 YouTubeChannel.hasMany(ChannelViolation, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'channel_violations'
 });
 ChannelViolation.belongsTo(YouTubeChannel, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'youtube_channel'
 });
 
 // YouTubeChannel 1-n Video
 YouTubeChannel.hasMany(Video, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'videos'
 });
 Video.belongsTo(YouTubeChannel, {
-  foreignKey: 'channel_id',
+  foreignKey: 'channel_db_id',
   as: 'youtube_channel'
 });
 
-// YouTubeChannel 1-1 AccessToken (nếu cần)
-YouTubeChannel.hasOne(AccessToken, {
+// YouTubeChannel 1-1 GoogleAccessToken (nếu cần)
+YouTubeChannel.hasOne(GoogleAccessToken, {
   foreignKey: 'channel_db_id',
   as: 'access_token'
 });
-AccessToken.belongsTo(YouTubeChannel, {
+GoogleAccessToken.belongsTo(YouTubeChannel, {
   foreignKey: 'channel_db_id',
   as: 'youtube_channel'
 });
 
 // Video 1-n VideoStatistics
 Video.hasMany(VideoStatistics, {
-  foreignKey: 'video_id',
+  foreignKey: 'video_db_id',
   as: 'video_statistics'
 });
 VideoStatistics.belongsTo(Video, {
-  foreignKey: 'video_id',
+  foreignKey: 'video_db_id',
   as: 'video'
 });
+
+// User 1-n UserChannel (mapping quyền sở hữu/quản lý kênh)
+User.hasMany(UserChannel, { foreignKey: 'user_id', as: 'user_channels' });
+UserChannel.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+YouTubeChannel.hasMany(UserChannel, { foreignKey: 'channel_db_id', as: 'user_channels' });
+UserChannel.belongsTo(YouTubeChannel, { foreignKey: 'channel_db_id', as: 'youtube_channel' });
 
 module.exports = {
   User,
@@ -94,6 +81,7 @@ module.exports = {
   ChannelViolation,
   Video,
   VideoStatistics,
-  AccessToken,
-  UserSchedule
+  GoogleAccessToken,
+  UserSchedule,
+  UserChannel
 }; 

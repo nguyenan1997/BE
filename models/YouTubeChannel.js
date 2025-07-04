@@ -7,15 +7,6 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  userId: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    field: 'user_id',
-    references: {
-      model: 'users',
-      key: 'id'
-    }
-  },
   channel_id: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -59,7 +50,6 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   createdAt: 'created_at',
   updatedAt: 'updated_at',
   indexes: [
-    { fields: ['user_id'] },
     { fields: ['channel_id'] }
   ]
 });

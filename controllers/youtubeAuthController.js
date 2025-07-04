@@ -1,9 +1,36 @@
 const { generateAuthUrl, exchangeCodeForTokens, refreshAccessToken } = require('../config/youtube');
-const { AccessToken, YouTubeChannel } = require('../models');
+const { GoogleAccessToken, YouTubeChannel } = require('../models');
 const jwt = require('jsonwebtoken');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 require('dotenv').config();
 
+/**
+ * @swagger
+ * /api/youtube-auth/auth-url:
+ *   post:
+ *     summary: Lấy URL xác thực OAuth2 YouTube
+ *     tags: [YouTube OAuth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: URL xác thực
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 authUrl:
+ *                   type: string
+ *                   example: "https://accounts.google.com/o/oauth2/auth?..."
+ *                 message:
+ *                   type: string
+ *                   example: "Authorization URL generated successfully"
+ *       401:
+ *         description: Unauthorized
+ */
 // Generate OAuth2 authorization URL
 const getAuthUrl = async (req, res) => {
   try {
@@ -25,14 +52,13 @@ const getAuthUrl = async (req, res) => {
     });
   }
 };
-
 // Refresh access token
 const refreshToken = async (req, res) => {
   try {
     const userId = req.currentUser.userId;
 
     // Get user's refresh token
-    const tokenRecord = await AccessToken.findOne({
+    const tokenRecord = await GoogleAccessToken.findOne({
       where: { user_id: userId, is_active: true }
     });
 
@@ -81,12 +107,23 @@ const refreshToken = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/status:
+ *   get:
+ *     summary: Lấy trạng thái xác thực YouTube của user
+ *     tags: [YouTube OAuth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Trạng thái xác thực
+ */
 // Get user's YouTube authorization status
 const getAuthStatus = async (req, res) => {
   try {
     const userId = req.currentUser.userId;
 
-    const tokenRecord = await AccessToken.findOne({
+    const tokenRecord = await GoogleAccessToken.findOne({
       where: { user_id: userId, is_active: true }
     });
 
@@ -121,13 +158,24 @@ const getAuthStatus = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/revoke:
+ *   post:
+ *     summary: Thu hồi quyền truy cập YouTube
+ *     tags: [YouTube OAuth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Thu hồi thành công
+ */
 // Revoke YouTube authorization
 const revokeAuth = async (req, res) => {
   try {
     const userId = req.currentUser.userId;
 
     // Deactivate all tokens for user
-    await AccessToken.update(
+    await GoogleAccessToken.update(
       { is_active: false },
       { where: { user_id: userId } }
     );
@@ -146,7 +194,6 @@ const revokeAuth = async (req, res) => {
     });
   }
 };
-
 // Callback chỉ redirect về frontend
 const handleCallbackAndRedirect = (req, res) => {
   const { code } = req.query;
@@ -154,6 +201,43 @@ const handleCallbackAndRedirect = (req, res) => {
   res.redirect(`${frontendUrl}/oauth-success?code=${code}`);
 };
 
+/**
+ * @swagger
+ * /api/youtube-auth/finish:
+ *   post:
+ *     summary: Hoàn tất xác thực OAuth2, lưu token và đồng bộ kênh (frontend gọi)
+ *     tags: [YouTube OAuth]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code: { type: string }
+ *     responses:
+ *       200:
+ *         description: Hoàn tất xác thực và đồng bộ kênh thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "YouTube authorization & sync successful"
+ *                 syncResult:
+ *                   type: object
+ *                   description: Sync result details
+ *       400:
+ *         description: Lỗi xác thực hoặc không tìm thấy kênh
+ *       401:
+ *         description: Thiếu userId từ JWT
+ */
 // Xử lý thực sự: nhận code từ frontend, userId từ JWT
 const finishOAuth = async (req, res) => {
   try {

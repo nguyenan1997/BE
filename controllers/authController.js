@@ -8,6 +8,29 @@ const {
   removeUserTokens 
 } = require('../utils/tokenStore');
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Đăng ký user mới (chỉ admin)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               fullName: { type: string }
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công
+ *       409:
+ *         description: User đã tồn tại
+ */
 // Generate JWT Token
 const generateToken = (userId) => {
   return jwt.sign(
@@ -17,6 +40,29 @@ const generateToken = (userId) => {
   );
 };
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Đăng ký user mới (chỉ admin)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username: { type: string }
+ *               email: { type: string }
+ *               password: { type: string }
+ *               fullName: { type: string }
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công
+ *       409:
+ *         description: User đã tồn tại
+ */
 // Register new user (Admin Only)
 const register = async (req, res, next) => {
   try {
@@ -66,6 +112,27 @@ const register = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Đăng nhập
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: Đăng nhập thành công
+ *       401:
+ *         description: Sai thông tin đăng nhập
+ */
 // Login user
 const login = async (req, res, next) => {
   try {
@@ -131,6 +198,19 @@ const login = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   get:
+ *     summary: Lấy thông tin user hiện tại
+ *     tags: [Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Thông tin user
+ *       404:
+ *         description: Không tìm thấy user
+ */
 // Get current user profile
 const getProfile = async (req, res, next) => {
   try {
@@ -154,6 +234,19 @@ const getProfile = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Làm mới token đăng nhập
+ *     tags: [Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Làm mới token thành công
+ *       401:
+ *         description: Token không hợp lệ
+ */
 // Refresh token
 const refreshToken = async (req, res, next) => {
   try {
@@ -196,6 +289,17 @@ const refreshToken = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Đăng xuất (logout khỏi thiết bị hiện tại)
+ *     tags: [Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Đăng xuất thành công
+ */
 // Logout user (server-side token blacklisting)
 const logout = async (req, res, next) => {
   try {
@@ -214,6 +318,17 @@ const logout = async (req, res, next) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/auth/logout-all:
+ *   post:
+ *     summary: Đăng xuất khỏi tất cả thiết bị
+ *     tags: [Auth]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Đăng xuất khỏi tất cả thiết bị thành công
+ */
 // Logout from all devices
 const logoutAll = async (req, res, next) => {
   try {

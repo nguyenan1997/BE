@@ -7,14 +7,6 @@ const AccessToken = sequelize.define('AccessToken', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  user_id: {
-    type: DataTypes.UUID,
-    allowNull: false,
-    references: {
-      model: 'users',
-      key: 'id'
-    }
-  },
   channel_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
@@ -44,12 +36,11 @@ const AccessToken = sequelize.define('AccessToken', {
     defaultValue: true
   }
 }, {
-  tableName: 'access_tokens',
+  tableName: 'google_access_tokens',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: false,
   indexes: [
-    { fields: ['user_id'] },
     { fields: ['channel_db_id'] }
   ]
 });

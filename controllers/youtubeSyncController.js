@@ -1,35 +1,5 @@
 const { syncYouTubeChannelData, syncRevenueData } = require('../services/youtubeSyncService');
 
-// Sync toàn bộ dữ liệu kênh (bao gồm revenue)
-const syncChannelData = async (req, res) => {
-  try {
-    const { userId, channelId } = req.body;
-    
-    if (!userId || !channelId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID and Channel ID are required'
-      });
-    }
-
-    const result = await syncYouTubeChannelData({ userId, channelId });
-    
-    res.json({
-      success: true,
-      data: result,
-      message: 'Channel data synced successfully'
-    });
-    
-  } catch (error) {
-    console.error('Error syncing channel data:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to sync channel data',
-      error: error.message
-    });
-  }
-};
-
 // Sync revenue data cho kênh/video cụ thể
 const syncRevenueDataForPeriod = async (req, res) => {
   try {
@@ -64,15 +34,14 @@ const syncRevenueDataForPeriod = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error syncing revenue data:', error);
-    res.status(500).json({
+    const isYoutube403 = error.message && error.message.includes('not eligible for analytics or monetization');
+    res.status(isYoutube403 ? 403 : 500).json({
       success: false,
-      message: 'Failed to sync revenue data',
-      error: error.message
+      message: error.message,
+      error: error.stack
     });
   }
 };
-
 // Sync revenue data cho tất cả kênh của user
 const syncAllUserChannelsRevenue = async (req, res) => {
   try {
@@ -85,11 +54,12 @@ const syncAllUserChannelsRevenue = async (req, res) => {
       });
     }
 
-    // Lấy tất cả kênh của user
+    // Lấy tất cả kênh của user qua UserChannel
+    const UserChannel = require('../models/UserChannel');
     const { YouTubeChannel } = require('../models');
-    const channels = await YouTubeChannel.findAll({
-      where: { user_id: userId }
-    });
+    const links = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
+    const channelDbIds = links.map(link => link.channel_db_id);
+    const channels = channelDbIds.length > 0 ? await YouTubeChannel.findAll({ where: { id: channelDbIds } }) : [];
 
     if (channels.length === 0) {
       return res.json({
@@ -138,15 +108,14 @@ const syncAllUserChannelsRevenue = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error syncing all channels revenue:', error);
-    res.status(500).json({
+    const isYoutube403 = error.message && error.message.includes('not eligible for analytics or monetization');
+    res.status(isYoutube403 ? 403 : 500).json({
       success: false,
-      message: 'Failed to sync all channels revenue',
-      error: error.message
+      message: error.message,
+      error: error.stack
     });
   }
 };
-
 // Get sync status và thống kê
 const getSyncStatus = async (req, res) => {
   try {
@@ -160,38 +129,20 @@ const getSyncStatus = async (req, res) => {
     }
 
     const { YouTubeChannel, ChannelStatistics, Video, VideoStatistics, AccessToken } = require('../models');
-    
-    // Kiểm tra authorization status
-    const tokenRecord = await AccessToken.findOne({
-      where: { user_id: req.user.id, is_active: true, channel_db_id: channelDbId }
-    });
-
-    const authStatus = {
-      isAuthorized: !!tokenRecord,
-      hasAnalyticsAccess: tokenRecord ? tokenRecord.scope.includes('yt-analytics-monetary.readonly') : false,
-      tokenExpiresAt: tokenRecord ? tokenRecord.expiresAt : null,
-      isExpired: tokenRecord ? (tokenRecord.expiresAt && new Date() > tokenRecord.expiresAt) : true
-    };
+    const SharedChannel = require('../models/UserChannel');
+    // Lấy danh sách channel_db_id của user
+    const links = await SharedChannel.findAll({ where: { user_id: userId, is_active: true } });
+    const channelDbIds = links.map(link => link.channel_db_id);
 
     // Thống kê dữ liệu
-    const channelCount = await YouTubeChannel.count({
-      where: { user_id: userId }
-    });
+    const channelCount = channelDbIds.length;
 
     const videoCount = await Video.count({
-      include: [{
-        model: YouTubeChannel,
-        as: 'youtube_channel',
-        where: { user_id: userId }
-      }]
+      where: { channel_db_id: channelDbIds }
     });
 
     const latestChannelStats = await ChannelStatistics.findOne({
-      include: [{
-        model: YouTubeChannel,
-        as: 'youtube_channel',
-        where: { user_id: userId }
-      }],
+      where: { channel_db_id: channelDbIds },
       order: [['date', 'DESC']]
     });
 
@@ -199,11 +150,7 @@ const getSyncStatus = async (req, res) => {
       include: [{
         model: Video,
         as: 'video',
-        include: [{
-          model: YouTubeChannel,
-          as: 'youtube_channel',
-          where: { user_id: userId }
-        }]
+        where: { channel_db_id: channelDbIds }
       }],
       order: [['date', 'DESC']]
     });
@@ -211,7 +158,6 @@ const getSyncStatus = async (req, res) => {
     res.json({
       success: true,
       data: {
-        authStatus: authStatus,
         channels: {
           total: channelCount,
           lastSync: latestChannelStats ? latestChannelStats.date : null,
@@ -226,18 +172,106 @@ const getSyncStatus = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Error getting sync status:', error);
-    res.status(500).json({
+    const isYoutube403 = error.message && error.message.includes('not eligible for analytics or monetization');
+    res.status(isYoutube403 ? 403 : 500).json({
       success: false,
-      message: 'Failed to get sync status',
-      error: error.message
+      message: error.message,
+      error: error.stack
     });
   }
 };
 
+/**
+ * @swagger
+ * /api/youtube-sync/refresh:
+ *   post:
+ *     summary: Manually refresh (re-sync) all YouTube channels for the current user
+ *     tags: [YouTube Sync]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: All channel data refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       channelId:
+ *                         type: string
+ *                       success:
+ *                         type: boolean
+ *                       result:
+ *                         type: object
+ *                       error:
+ *                         type: string
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: No channels found for this user
+ *       500:
+ *         description: Internal server error
+ */
+const refreshAllChannelData = async (req, res) => {
+  try {
+    const userId = req.currentUser?.userId || req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized: userId missing' });
+    }
+    const UserChannel = require('../models/UserChannel');
+    const { YouTubeChannel } = require('../models');
+    const links = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
+    if (!links.length) {
+      return res.status(404).json({ success: false, message: 'No channels found for this user.' });
+    }
+    const syncYouTubeChannelData = require('../services/youtubeSyncService').syncYouTubeChannelData;
+    const results = [];
+    for (const link of links) {
+      try {
+        const channel = await YouTubeChannel.findOne({ where: { id: link.channel_db_id } });
+        if (!channel) {
+          results.push({ channelDbId: link.channel_db_id, channelId: null, success: false, error: 'Channel not found in database' });
+          continue;
+        }
+        const result = await syncYouTubeChannelData({
+          userId,
+          channelId: channel.channel_id,
+          channelDbId: channel.id
+        });
+        results.push({ channelDbId: link.channel_db_id, channelId: channel.channel_id, success: true, result });
+      } catch (err) {
+        let channel = null;
+        try {
+          channel = await YouTubeChannel.findOne({ where: { id: link.channel_db_id } });
+        } catch (err) {
+          console.error('Error finding channel:', err);
+        }
+        let errorMsg = err.message;
+        if (
+          errorMsg.includes('not eligible for analytics') ||
+          errorMsg.includes('status code 403') ||
+          errorMsg.includes('monetization')
+        ) {
+          errorMsg = 'This channel is not eligible for analytics or monetization.';
+        }
+        results.push({ channelDbId: link.channel_db_id, channelId: channel ? channel.channel_id : null, success: false, error: errorMsg });
+      }
+    }
+    res.json({ success: true, results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message, error: error.stack });
+  }
+};
+
 module.exports = {
-  syncChannelData,
   syncRevenueDataForPeriod,
   syncAllUserChannelsRevenue,
-  getSyncStatus
+  getSyncStatus,
+  refreshAllChannelData
 }; 

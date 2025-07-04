@@ -7,7 +7,7 @@ const VideoStatistics = sequelize.define('VideoStatistics', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
-  video_id: {
+  video_db_id: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
@@ -16,7 +16,7 @@ const VideoStatistics = sequelize.define('VideoStatistics', {
     }
   },
   date: {
-    type: DataTypes.DATE,
+    type: DataTypes.DATEONLY,
     allowNull: false
   },
   view_count: {
@@ -35,18 +35,23 @@ const VideoStatistics = sequelize.define('VideoStatistics', {
     type: DataTypes.INTEGER,
     allowNull: true
   },
+  watch_time_minutes: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
   estimated_revenue: {
     type: DataTypes.FLOAT,
     allowNull: true
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'video_statistics',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: false,
+  timestamps: false,
   indexes: [
-    { fields: ['video_id'] },
-    { fields: ['date'] }
+    { unique: true, fields: ['video_db_id', 'date'] }
   ]
 });
 
