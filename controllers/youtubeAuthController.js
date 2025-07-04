@@ -112,7 +112,7 @@ const refreshToken = async (req, res) => {
  * /api/youtube-auth/status:
  *   get:
  *     summary: Lấy trạng thái xác thực YouTube của user
- *     tags: [YouTube Auth]
+ *     tags: [YouTube OAuth]
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:
@@ -163,7 +163,7 @@ const getAuthStatus = async (req, res) => {
  * /api/youtube-auth/revoke:
  *   post:
  *     summary: Thu hồi quyền truy cập YouTube
- *     tags: [YouTube Auth]
+ *     tags: [YouTube OAuth]
  *     security: [{ bearerAuth: [] }]
  *     responses:
  *       200:

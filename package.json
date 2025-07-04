@@ -9,7 +9,8 @@
     "test": "jest",
     "setup-fresh-database": "node scripts/setup-fresh-database.js",
     "monitor-tokens": "node scripts/monitorTokens.js monitor",
-    "clear-tokens": "node scripts/monitorTokens.js clear"
+    "clear-tokens": "node scripts/monitorTokens.js clear",
+    "clear-all-tables": "node scripts/clear-all-tables.js"
   },
   "keywords": [
     "nodejs",

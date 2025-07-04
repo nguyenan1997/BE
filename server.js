@@ -13,7 +13,6 @@ require('./models/index');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const youtubeAuthRoutes = require('./routes/youtubeAuthRoutes');
-const youtubeAnalyticsRoutes = require('./routes/youtubeAnalyticsRoutes');
 const youtubeSyncRoutes = require('./routes/youtubeSyncRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
@@ -72,7 +71,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/youtube-auth', youtubeAuthRoutes);
-app.use('/api/youtube-analytics', youtubeAnalyticsRoutes);
 app.use('/api/youtube-sync', youtubeSyncRoutes);
 
 app.get('/health', (req, res) => {

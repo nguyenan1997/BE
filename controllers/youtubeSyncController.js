@@ -1,59 +1,5 @@
 const { syncYouTubeChannelData, syncRevenueData } = require('../services/youtubeSyncService');
 
-/**
- * @swagger
- * /api/youtube-sync/channel:
- *   post:
- *     summary: Đồng bộ toàn bộ dữ liệu kênh (bao gồm revenue)
- *     tags: [YouTube Sync]
- *     security: [{ bearerAuth: [] }]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               userId:
- *                 type: string
- *               channelId:
- *                 type: string
- *     responses:
- *       200:
- *         description: Đồng bộ thành công
- *       400:
- *         description: Thiếu tham số hoặc lỗi
- */
-// Sync toàn bộ dữ liệu kênh (bao gồm revenue)
-const syncChannelData = async (req, res) => {
-  try {
-    const { userId, channelId } = req.body;
-    
-    if (!userId || !channelId) {
-      return res.status(400).json({
-        success: false,
-        message: 'User ID and Channel ID are required'
-      });
-    }
-
-    const result = await syncYouTubeChannelData({ userId, channelId });
-    
-    res.json({
-      success: true,
-      data: result,
-      message: 'Channel data synced successfully'
-    });
-    
-  } catch (error) {
-    const isYoutube403 = error.message && error.message.includes('not eligible for analytics or monetization');
-    res.status(isYoutube403 ? 403 : 500).json({
-      success: false,
-      message: error.message,
-      error: error.stack
-    });
-  }
-};
-
 // Sync revenue data cho kênh/video cụ thể
 const syncRevenueDataForPeriod = async (req, res) => {
   try {
@@ -303,8 +249,18 @@ const refreshAllChannelData = async (req, res) => {
         let channel = null;
         try {
           channel = await YouTubeChannel.findOne({ where: { id: link.channel_db_id } });
-        } catch {}
-        results.push({ channelDbId: link.channel_db_id, channelId: channel ? channel.channel_id : null, success: false, error: err.message });
+        } catch (err) {
+          console.error('Error finding channel:', err);
+        }
+        let errorMsg = err.message;
+        if (
+          errorMsg.includes('not eligible for analytics') ||
+          errorMsg.includes('status code 403') ||
+          errorMsg.includes('monetization')
+        ) {
+          errorMsg = 'This channel is not eligible for analytics or monetization.';
+        }
+        results.push({ channelDbId: link.channel_db_id, channelId: channel ? channel.channel_id : null, success: false, error: errorMsg });
       }
     }
     res.json({ success: true, results });
@@ -314,7 +270,6 @@ const refreshAllChannelData = async (req, res) => {
 };
 
 module.exports = {
-  syncChannelData,
   syncRevenueDataForPeriod,
   syncAllUserChannelsRevenue,
   getSyncStatus,
