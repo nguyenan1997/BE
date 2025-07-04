@@ -1,4 +1,4 @@
-const { getVideosOfChannel } = require('../services/videoService');
+const { getVideosOfChannel, fetchVideoStatistics } = require('../services/videoService');
 
 /**
  * @swagger
@@ -103,4 +103,50 @@ const getVideosByChannel = async (req, res) => {
   }
 };
 
-module.exports = { getVideosByChannel }; 
+/**
+ * @swagger
+ * /api/videos/{videoDbId}/statistics:
+ *   get:
+ *     summary: Lấy tất cả thống kê của một video(Hiện tại chỉ lưu trong 7 ngày gần nhất)
+ *     tags:
+ *       - Video
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: videoDbId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của video trong database
+ *     responses:
+ *       200:
+ *         description: Danh sách thống kê video lấy thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/VideoStatistics'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Lỗi server
+ */
+const getVideoStatistics = async (req, res) => {
+  try {
+    const { videoDbId } = req.params;
+    const stats = await fetchVideoStatistics(videoDbId);
+    res.json({ success: true, data: stats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+module.exports = { getVideosByChannel, getVideoStatistics }; 
