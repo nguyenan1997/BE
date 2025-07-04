@@ -12,6 +12,10 @@ const {
   createYouTubeAnalyticsClient,
 } = require("../config/youtube");
 
+const ChannelViolation = require('../models/ChannelViolation');
+const User = require('../models/User');
+const YouTubeChannel = require('../models/YouTubeChannel');
+
 /**
  * Đồng bộ dữ liệu từ YouTube API vào database (bao gồm revenue)
  * @param {Object} params
@@ -337,6 +341,7 @@ async function syncYouTubeChannelData({
     }
   }
 
+  await fakeAndInsertChannelViolations(userId, channelDbId);
   return {
     success: !analyticsError,
     analyticsError,
@@ -477,6 +482,48 @@ async function syncRevenueData({
     success: true,
     results: results,
   };
+}
+
+/**
+ * Fake dữ liệu cảnh báo vi phạm và insert vào bảng channel_violations
+ * @param {string} userId - id của user
+ * @param {string} channelDbId - id của kênh trong DB
+ */
+async function fakeAndInsertChannelViolations(userId, channelDbId) {
+  // Lấy thông tin user và channel
+  const user = await User.findOne({ where: { id: userId } });
+  const channel = await YouTubeChannel.findOne({ where: { id: channelDbId } });
+  if (!user || !channel) throw new Error('User hoặc Channel không tồn tại');
+
+  // Lấy handle kênh (bỏ @ nếu có)
+  const channelHandle = channel.channel_custom_url ? channel.channel_custom_url.replace(/^@/, '') : channel.channel_id;
+
+  // Fake 2 vi phạm
+  const fakeViolations = [
+    {
+      channel_db_id: channelDbId,
+      violation_type: 'community',
+      title: 'Cảnh báo vi phạm cộng đồng',
+      description: `Kênh @${channelHandle} bị cảnh báo cộng đồng ngày 2024-07-01`,
+      status: 'active',
+      violation_date: new Date('2024-07-01T12:00:00Z'),
+      resolved_date: null
+    },
+    {
+      channel_db_id: channelDbId,
+      violation_type: 'monetization',
+      title: 'Cảnh báo kiếm tiền',
+      description: `Kênh @${channelHandle} bị cảnh báo kiếm tiền ngày 2024-06-28`,
+      status: 'resolved',
+      violation_date: new Date('2024-06-28T09:00:00Z'),
+      resolved_date: new Date('2024-07-02T10:00:00Z')
+    }
+  ];
+
+  for (const v of fakeViolations) {
+    await ChannelViolation.create(v);
+    console.log(`Đã insert violation: ${v.title} cho kênh ${channelHandle}`);
+  }
 }
 
 module.exports = {
