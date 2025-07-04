@@ -14,6 +14,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const youtubeAuthRoutes = require('./routes/youtubeAuthRoutes');
 const youtubeSyncRoutes = require('./routes/youtubeSyncRoutes');
+const channelRoutes = require('./routes/channelRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -70,6 +71,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/channels', channelRoutes);
 app.use('/api/youtube-auth', youtubeAuthRoutes);
 app.use('/api/youtube-sync', youtubeSyncRoutes);
 
