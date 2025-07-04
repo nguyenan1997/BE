@@ -43,6 +43,14 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   is_monitized: {
     type: DataTypes.BOOLEAN,
     allowNull: true
+  },
+  total_view_count: {
+    type: DataTypes.BIGINT,
+    allowNull: true
+  },
+  total_subscriber_count: {
+    type: DataTypes.INTEGER,
+    allowNull: true
   }
 }, {
   tableName: 'youtube_channels',
