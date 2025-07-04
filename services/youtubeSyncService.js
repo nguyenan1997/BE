@@ -106,8 +106,6 @@ async function syncYouTubeChannelData({
   catch (error) {
     console.error("Error fetching channel data:", error);
   }
-
-  console.log("Channel response:", channelRes);
   const channel = channelRes.data.items[0];
   if (!channel) throw new Error("Not found YouTube channel with ID: " + channelId);
 
