@@ -1,4 +1,5 @@
 const axios = require("axios");
+const UserChannel = require("../models/UserChannel");
 const {
   User,
   YouTubeChannel,
@@ -63,22 +64,21 @@ async function syncYouTubeChannelData({
     }
 
     // Check và refresh token nếu cần
-    if (tokenRecord.expiresAt && new Date() > tokenRecord.expiresAt) {
-      const refreshResult = await refreshAccessToken(tokenRecord.refreshToken);
+    if (tokenRecord.expires_at && new Date() > tokenRecord.expires_at) {
+      const refreshResult = await refreshAccessToken(tokenRecord.refresh_token);
       if (!refreshResult.success) {
+        console.error("Refresh token failed:", refreshResult);
         throw new Error("Failed to refresh access token");
       }
       accessToken = refreshResult.tokens.access_token;
-
-      // Cập nhật token mới
       await tokenRecord.update({
-        accessToken: refreshResult.tokens.access_token,
-        expiresAt: refreshResult.tokens.expiry_date
+        access_token: refreshResult.tokens.access_token,
+        expires_at: refreshResult.tokens.expiry_date
           ? new Date(refreshResult.tokens.expiry_date)
           : null,
       });
     } else {
-      accessToken = tokenRecord.accessToken;
+      accessToken = tokenRecord.access_token;
     }
 
     // Kiểm tra quyền analytics
@@ -90,18 +90,26 @@ async function syncYouTubeChannelData({
   }
 
   // 1. Lấy thông tin kênh
-  const channelRes = await axios.get(
-    "https://www.googleapis.com/youtube/v3/channels",
-    {
-      params: {
-        part: "snippet,statistics,brandingSettings,contentDetails",
-        id: channelId,
-        access_token: accessToken,
-      },
-    }
-  );
+  let channelRes;
+  try{
+    channelRes = await axios.get(
+      "https://www.googleapis.com/youtube/v3/channels",
+      {
+        params: {
+          part: "snippet,statistics,brandingSettings,contentDetails",
+          id: channelId,
+          access_token: accessToken,
+        },
+      }
+    );
+  }
+  catch (error) {
+    console.error("Error fetching channel data:", error);
+  }
+
+  console.log("Channel response:", channelRes);
   const channel = channelRes.data.items[0];
-  if (!channel) throw new Error("Không tìm thấy channel");
+  if (!channel) throw new Error("Not found YouTube channel with ID: " + channelId);
 
   // 2. Lưu vào bảng youtube_channels
   const dbChannel = await YouTubeChannel.upsert({
@@ -121,7 +129,6 @@ async function syncYouTubeChannelData({
   channelDbId = dbChannel[0].id || dbChannel.id;
 
   // --- Tạo liên kết user-channel nếu chưa có ---
-  const UserChannel = require("../models/UserChannel");
   const existingLink = await UserChannel.findOne({
     where: { user_id: userId, channel_db_id: channelDbId }
   });
