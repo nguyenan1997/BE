@@ -13,8 +13,6 @@ const {
 } = require("../config/youtube");
 
 const ChannelViolation = require('../models/ChannelViolation');
-const User = require('../models/User');
-const YouTubeChannel = require('../models/YouTubeChannel');
 
 /**
  * Đồng bộ dữ liệu từ YouTube API vào database (bao gồm revenue)
@@ -341,7 +339,6 @@ async function syncYouTubeChannelData({
     }
   }
 
-  await fakeAndInsertChannelViolations(userId, channelDbId);
   return {
     success: !analyticsError,
     analyticsError,
@@ -354,179 +351,76 @@ async function syncYouTubeChannelData({
 }
 
 /**
- * Sync revenue data cho kênh và video cụ thể
- * @param {Object} params
- * @param {string} params.userId
- * @param {string} params.channelId (optional)
- * @param {string} params.videoId (optional)
- * @param {string} params.startDate (YYYY-MM-DD)
- * @param {string} params.endDate (YYYY-MM-DD)
+ * Cập nhật cảnh báo vi phạm cho 1 channel từ webhook n8n
+ * @param {string} userId
+ * @param {string} channelDbId
  */
-async function syncRevenueData({
-  userId,
-  channelId = null,
-  videoId = null,
-  startDate,
-  endDate,
-}) {
-  // Lấy access token
-  const tokenRecord = await GoogleAccessToken.findOne({
-    where: { user_id: userId, is_active: true, channel_db_id: channelId },
-  });
+async function updateChannelViolationsFromWebhook(userId, channelDbId) {
+  // 1. Lấy thông tin user và channel
+  const user = await User.findOne({ where: { id: userId } });
+  const channel = await YouTubeChannel.findOne({ where: { id: channelDbId } });
+  if (!user || !channel) throw new Error('User or Channel does not exist');
 
-  if (!tokenRecord) {
-    throw new Error("No active YouTube authorization found for user");
+  // 2. Lấy handle kênh (bỏ @ nếu có)
+  const channelHandle = channel.channel_custom_url
+    ? channel.channel_custom_url.replace(/^@/, '')
+    : channel.channel_id;
+
+  // 3. Gọi webhook n8n
+  const webhookUrl = process.env.N8N_WEBHOOK_URL;
+  let response;
+  try {
+    response = await axios.post(webhookUrl, {
+      email: user.email,
+      channel_handle: channelHandle
+    });
+  } catch (err) {
+    throw new Error('Error calling n8n webhook: ' + err.message);
   }
 
-  // Check và refresh token nếu cần
-  let accessToken = tokenRecord.accessToken;
-  if (tokenRecord.expiresAt && new Date() > tokenRecord.expiresAt) {
-    const refreshResult = await refreshAccessToken(tokenRecord.refreshToken);
-    if (!refreshResult.success) {
-      throw new Error("Failed to refresh access token");
-    }
-    accessToken = refreshResult.tokens.access_token;
+  const data = response.data;
+  if (!data.violations || !Array.isArray(data.violations)) {
+    throw new Error('Webhook returned invalid data');
+  }
 
-    await tokenRecord.update({
-      accessToken: refreshResult.tokens.access_token,
-      expiresAt: refreshResult.tokens.expiry_date
-        ? new Date(refreshResult.tokens.expiry_date)
-        : null,
+  // 4. Xoá hết cảnh báo cũ của channel này
+  await ChannelViolation.destroy({ where: { channel_db_id: channelDbId } });
+
+  // 5. Insert lại toàn bộ cảnh báo mới
+  for (const v of data.violations) {
+    await ChannelViolation.create({
+      channel_db_id: channelDbId,
+      violation_type: v.type,
+      title: v.title,
+      description: v.description,
+      status: v.status,
+      violation_date: v.date,
+      resolved_date: v.status === 'resolved' ? v.resolved_date : null
     });
   }
-
-  const analyticsClient = createYouTubeAnalyticsClient(accessToken);
-  const results = [];
-
-  // Sync channel revenue
-  if (channelId) {
-    try {
-      const channelRevenueRes = await analyticsClient.reports.query({
-        ids: `channel==${channelId}`,
-        startDate: startDate,
-        endDate: endDate,
-        metrics: "estimatedRevenue,adImpressions,cpm",
-        dimensions: "day",
-        sort: "day",
-      });
-
-      if (channelRevenueRes.data.rows) {
-        for (const row of channelRevenueRes.data.rows) {
-          const [date, revenue, impressions, cpm] = row;
-
-          // Tìm channel trong database
-          const channel = await YouTubeChannel.findOne({
-            where: { channel_id: channelId },
-          });
-
-          if (channel) {
-            await ChannelStatistics.create({
-              channel_id: channel.id,
-              date: new Date(date),
-              estimated_revenue: revenue || null,
-              // Các field khác giữ nguyên null
-            });
-          }
-        }
-        results.push(
-          `Channel revenue synced for ${channelRevenueRes.data.rows.length} days`
-        );
-      }
-    } catch (error) {
-      console.error("Failed to sync channel revenue:", error);
-      results.push("Channel revenue sync failed");
-    }
-  }
-
-  // Sync video revenue
-  if (videoId) {
-    try {
-      const videoRevenueRes = await analyticsClient.reports.query({
-        ids: `video==${videoId}`,
-        startDate: startDate,
-        endDate: endDate,
-        metrics: "estimatedRevenue,adImpressions,cpm",
-        dimensions: "day",
-        sort: "day",
-      });
-
-      if (videoRevenueRes.data.rows) {
-        for (const row of videoRevenueRes.data.rows) {
-          const [date, revenue, impressions, cpm] = row;
-
-          // Tìm video trong database
-          const video = await Video.findOne({
-            where: { video_id: videoId },
-          });
-
-          if (video) {
-            await VideoStatistics.create({
-              video_id: video.id,
-              date: new Date(date),
-              estimated_revenue: revenue || null,
-              // Các field khác giữ nguyên null
-            });
-          }
-        }
-        results.push(
-          `Video revenue synced for ${videoRevenueRes.data.rows.length} days`
-        );
-      }
-    } catch (error) {
-      console.error("Failed to sync video revenue:", error);
-      results.push("Video revenue sync failed");
-    }
-  }
-
-  return {
-    success: true,
-    results: results,
-  };
 }
 
 /**
- * Fake dữ liệu cảnh báo vi phạm và insert vào bảng channel_violations
- * @param {string} userId - id của user
- * @param {string} channelDbId - id của kênh trong DB
+ * Cập nhật cảnh báo cho tất cả các channel của 1 user
+ * @param {string} userId
  */
-async function fakeAndInsertChannelViolations(userId, channelDbId) {
-  // Lấy thông tin user và channel
-  const user = await User.findOne({ where: { id: userId } });
-  const channel = await YouTubeChannel.findOne({ where: { id: channelDbId } });
-  if (!user || !channel) throw new Error('User hoặc Channel không tồn tại');
-
-  // Lấy handle kênh (bỏ @ nếu có)
-  const channelHandle = channel.channel_custom_url ? channel.channel_custom_url.replace(/^@/, '') : channel.channel_id;
-
-  // Fake 2 vi phạm
-  const fakeViolations = [
-    {
-      channel_db_id: channelDbId,
-      violation_type: 'community',
-      title: 'Cảnh báo vi phạm cộng đồng',
-      description: `Kênh @${channelHandle} bị cảnh báo cộng đồng ngày 2024-07-01`,
-      status: 'active',
-      violation_date: new Date('2024-07-01T12:00:00Z'),
-      resolved_date: null
-    },
-    {
-      channel_db_id: channelDbId,
-      violation_type: 'monetization',
-      title: 'Cảnh báo kiếm tiền',
-      description: `Kênh @${channelHandle} bị cảnh báo kiếm tiền ngày 2024-06-28`,
-      status: 'resolved',
-      violation_date: new Date('2024-06-28T09:00:00Z'),
-      resolved_date: new Date('2024-07-02T10:00:00Z')
+async function updateAllChannelsViolationsForUser(userId) {
+  const UserChannel = require('../models/UserChannel');
+  const links = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
+  if (!links.length) {
+    console.log('User does not have any channels to update violations.');
+    return;
+  }
+  for (const link of links) {
+    try {
+      await updateChannelViolationsFromWebhook(userId, link.channel_db_id);
+      console.log(`Updated violations for channel ${link.channel_db_id}`);
+    } catch (err) {
+      console.error(`Error updating violations for channel ${link.channel_db_id}:`, err.message);
     }
-  ];
-
-  for (const v of fakeViolations) {
-    await ChannelViolation.create(v);
-    console.log(`Đã insert violation: ${v.title} cho kênh ${channelHandle}`);
   }
 }
 
 module.exports = {
-  syncYouTubeChannelData,
-  syncRevenueData,
+  syncYouTubeChannelData
 };
