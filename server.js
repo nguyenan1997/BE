@@ -16,6 +16,7 @@ const youtubeAuthRoutes = require('./routes/youtubeAuthRoutes');
 const youtubeSyncRoutes = require('./routes/youtubeSyncRoutes');
 const channelRoutes = require('./routes/channelRoutes');
 const videoRoutes = require('./routes/videoRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -76,6 +77,7 @@ app.use('/api/channels', channelRoutes);
 app.use('/api/youtube-auth', youtubeAuthRoutes);
 app.use('/api/youtube-sync', youtubeSyncRoutes);
 app.use('/api', videoRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ 
