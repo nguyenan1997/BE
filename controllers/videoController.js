@@ -87,7 +87,7 @@ const { getVideosOfChannel, fetchVideoStatistics } = require('../services/videoS
  * @swagger
  * /api/channels/{channelDbId}/videos:
  *   get:
- *     summary: Lấy danh sách video của một channel
+ *     summary: Lấy danh sách video của một channel (có phân trang)
  *     tags:
  *       - Video
  *     security:
@@ -99,9 +99,21 @@ const { getVideosOfChannel, fetchVideoStatistics } = require('../services/videoS
  *         schema:
  *           type: string
  *         description: ID của channel trong database
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số lượng video mỗi trang
  *     responses:
  *       200:
- *         description: Danh sách video lấy thành công
+ *         description: Danh sách video lấy thành công (có phân trang)
  *         content:
  *           application/json:
  *             schema:
@@ -110,7 +122,16 @@ const { getVideosOfChannel, fetchVideoStatistics } = require('../services/videoS
  *                 success:
  *                   type: boolean
  *                   example: true
- *                 data:
+ *                 total:
+ *                   type: integer
+ *                   example: 123
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 10
+ *                 videos:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Video'
@@ -122,8 +143,10 @@ const { getVideosOfChannel, fetchVideoStatistics } = require('../services/videoS
 const getVideosByChannel = async (req, res) => {
   try {
     const { channelDbId } = req.params;
-    const videos = await getVideosOfChannel(channelDbId);
-    res.json({ success: true, data: videos });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const result = await getVideosOfChannel(channelDbId, page, limit);
+    res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -133,7 +156,7 @@ const getVideosByChannel = async (req, res) => {
  * @swagger
  * /api/videos/{videoDbId}/statistics:
  *   get:
- *     summary: Lấy tất cả thống kê của một video(Hiện tại chỉ lưu trong 7 ngày gần nhất)
+ *     summary: Lấy tất cả thống kê của một video (có thể lọc theo số ngày gần nhất, mặc định 7)
  *     tags:
  *       - Video
  *     security:
@@ -145,9 +168,15 @@ const getVideosByChannel = async (req, res) => {
  *         schema:
  *           type: string
  *         description: ID của video trong database
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           default: 7
+ *         description: Số ngày gần nhất muốn lấy thống kê (tối đa số ngày YouTube API đã cập nhật)
  *     responses:
  *       200:
- *         description: Danh sách thống kê video lấy thành công
+ *         description: Danh sách thống kê video lấy thành công (các ngày gần nhất có dữ liệu)
  *         content:
  *           application/json:
  *             schema:
@@ -168,7 +197,8 @@ const getVideosByChannel = async (req, res) => {
 const getVideoStatistics = async (req, res) => {
   try {
     const { videoDbId } = req.params;
-    const stats = await fetchVideoStatistics(videoDbId);
+    const days = parseInt(req.query.days) || 7;
+    const stats = await fetchVideoStatistics(videoDbId, days);
     res.json({ success: true, data: stats });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

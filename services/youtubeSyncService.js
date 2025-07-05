@@ -172,16 +172,19 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // 3. Lấy thống kê từng ngày cho kênh trong 7 ngày gần nhất
+  // 3. Lấy thống kê từng ngày cho kênh trong 9 ngày gần nhất
   let channelStatsRows = [];
   let channelStatsHeaders = [];
   let analyticsError = null;
   try {
     const analyticsClient = createYouTubeAnalyticsClient(accessToken);
     const endDate = new Date().toISOString().split("T")[0];
-    const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const startDate = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
+
+      console.log("startDate===================>", startDate);
+      console.log("endDate===================>", endDate);
 
     const channelStatsRes = await analyticsClient.reports.query({
       ids: `channel==${channelId}`,
@@ -304,13 +307,13 @@ async function syncYouTubeChannelData({
 
       // Nếu có analytics, lưu vào video_statistics
       if (!analyticsError) {
-        // Lấy thống kê từng ngày cho video trong 7 ngày gần nhất
+        // Lấy thống kê từng ngày cho video trong 9 ngày gần nhất
         let videoStatsRows = [];
         let videoStatsHeaders = [];
         try {
           const analyticsClient = createYouTubeAnalyticsClient(accessToken);
           const endDate = new Date().toISOString().split("T")[0];
-          const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          const startDate = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000)
             .toISOString()
             .split("T")[0];
 
