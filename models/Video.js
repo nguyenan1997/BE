@@ -42,6 +42,10 @@ const Video = sequelize.define('Video', {
   privacy_status: {
     type: DataTypes.ENUM('public', 'private', 'unlisted'),
     allowNull: true
+  },
+  total_view_count: {
+    type: DataTypes.BIGINT,
+    allowNull: true
   }
 }, {
   tableName: 'videos',
