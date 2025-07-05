@@ -5,9 +5,12 @@ const youtubeConfig = {
   clientId: process.env.YOUTUBE_CLIENT_ID,
   clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
   redirectUri: process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/auth/youtube/callback',
-  
+
   // Scopes needed for YouTube Analytics API (revenue data)
   scopes: [
+    'openid',
+    'email',
+    'profile',
     'https://www.googleapis.com/auth/youtube.readonly',
     'https://www.googleapis.com/auth/yt-analytics.readonly',
     'https://www.googleapis.com/auth/yt-analytics-monetary.readonly'
@@ -26,7 +29,7 @@ const createOAuth2Client = () => {
 // Generate authorization URL
 const generateAuthUrl = (state = '') => {
   const oauth2Client = createOAuth2Client();
-  
+
   return oauth2Client.generateAuthUrl({
     access_type: 'offline', // Get refresh token
     scope: youtubeConfig.scopes,
@@ -40,7 +43,7 @@ const exchangeCodeForTokens = async (code) => {
   try {
     const oauth2Client = createOAuth2Client();
     const { tokens } = await oauth2Client.getToken(code);
-    
+
     return {
       success: true,
       tokens: {
@@ -67,9 +70,9 @@ const refreshAccessToken = async (refreshToken) => {
     oauth2Client.setCredentials({
       refresh_token: refreshToken
     });
-    
+
     const { credentials } = await oauth2Client.refreshAccessToken();
-    
+
     return {
       success: true,
       tokens: {
@@ -95,7 +98,7 @@ const createYouTubeClient = (accessToken) => {
   oauth2Client.setCredentials({
     access_token: accessToken
   });
-  
+
   return google.youtube({
     version: 'v3',
     auth: oauth2Client
@@ -108,7 +111,7 @@ const createYouTubeAnalyticsClient = (accessToken) => {
   oauth2Client.setCredentials({
     access_token: accessToken
   });
-  
+
   return google.youtubeAnalytics({
     version: 'v2',
     auth: oauth2Client

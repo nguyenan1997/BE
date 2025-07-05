@@ -25,6 +25,7 @@ const ChannelViolation = require('../models/ChannelViolation');
  * @param {string} params.scope
  * @param {string} params.tokenType
  * @param {string|Date} params.expiresAt
+ * @param {string} params.channelEmail
  */
 async function syncYouTubeChannelData({
   userId,
@@ -35,6 +36,7 @@ async function syncYouTubeChannelData({
   scope = null,
   tokenType = null,
   expiresAt = null,
+  channelEmail = null,
 }) {
   // Helper lấy field an toàn
   const safe = (obj, path, def = null) => {
@@ -128,6 +130,7 @@ async function syncYouTubeChannelData({
     is_monitized: null,
     total_view_count: totalViewCount,
     total_subscriber_count: totalSubscriberCount,
+    channel_email: channelEmail || null,
   });
 
   channelDbId = dbChannel[0].id || dbChannel.id;
@@ -182,9 +185,6 @@ async function syncYouTubeChannelData({
     const startDate = new Date(Date.now() - 9 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
-
-      console.log("startDate===================>", startDate);
-      console.log("endDate===================>", endDate);
 
     const channelStatsRes = await analyticsClient.reports.query({
       ids: `channel==${channelId}`,

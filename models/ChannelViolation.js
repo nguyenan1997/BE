@@ -16,25 +16,25 @@ const ChannelViolation = sequelize.define('ChannelViolation', {
     }
   },
   violation_type: {
-    type: DataTypes.ENUM('community', 'monetization'),
+    type: DataTypes.ENUM('copyright', 'community', 'monetization', 'spam', 'security', 'coppa', 'other'),
     allowNull: false
   },
   title: {
-    type: DataTypes.TEXT,
-    allowNull: true
+    type: DataTypes.STRING,
+    allowNull: false
   },
   description: {
     type: DataTypes.TEXT,
     allowNull: true
   },
   status: {
-    type: DataTypes.ENUM('active', 'resolved'),
+    type: DataTypes.ENUM('active', 'resolved', 'pending'),
     allowNull: false,
     defaultValue: 'active'
   },
   violation_date: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: false
   },
   resolved_date: {
     type: DataTypes.DATE,
@@ -44,7 +44,7 @@ const ChannelViolation = sequelize.define('ChannelViolation', {
   tableName: 'channel_violations',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: false,
+  updatedAt: 'updated_at',
   indexes: [
     { fields: ['channel_db_id'] },
     { fields: ['violation_type'] },
