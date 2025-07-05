@@ -279,6 +279,7 @@ async function syncYouTubeChannelData({
             safe(v, "snippet.thumbnails.default.url"),
           duration: safe(v, "contentDetails.duration"),
           privacy_status: safe(v, "status.privacyStatus"),
+          total_view_count: Number(safe(v, "statistics.viewCount")),
         });
       } else {
         await Video.create({
@@ -292,6 +293,7 @@ async function syncYouTubeChannelData({
             safe(v, "snippet.thumbnails.default.url"),
           duration: safe(v, "contentDetails.duration"),
           privacy_status: safe(v, "status.privacyStatus"),
+          total_view_count: Number(safe(v, "statistics.viewCount")),
         });
         // Luôn lấy lại bản ghi từ DB để lấy UUID
         const createdVideo = await Video.findOne({
