@@ -1,7 +1,8 @@
 const { generateAuthUrl, exchangeCodeForTokens, refreshAccessToken } = require('../config/youtube');
-const { GoogleAccessToken, YouTubeChannel } = require('../models');
+const { GoogleAccessToken } = require('../models');
 const jwt = require('jsonwebtoken');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
+const axios = require('axios');
 require('dotenv').config();
 
 /**
@@ -261,8 +262,21 @@ const finishOAuth = async (req, res) => {
     const result = await exchangeCodeForTokens(code);
     if (!result.success) return res.status(400).json({ success: false, error: result.error });
 
+    // Lấy email user từ access token
+    let userEmail = null;
+    try {
+      const userInfoRes = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${result.tokens.access_token}` }
+      });
+
+      userEmail = userInfoRes.data.email || null;
+    } catch (e) {
+      console.log("Error get email===================>", e);
+      userEmail = null;
+    }
+
     // Lấy channel_id của user hiện tại
-    const axios = require('axios');
+    
     const channelRes = await axios.get('https://www.googleapis.com/youtube/v3/channels', {
       params: {
         part: 'id,snippet',
@@ -287,7 +301,8 @@ const finishOAuth = async (req, res) => {
       refreshToken: result.tokens.refresh_token,
       scope: result.tokens.scope,
       tokenType: result.tokens.token_type,
-      expiresAt: result.tokens.expiry_date
+      expiresAt: result.tokens.expiry_date,
+      channelEmail: userEmail
     });
 
     return res.json({

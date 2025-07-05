@@ -51,6 +51,10 @@ const YouTubeChannel = sequelize.define('YouTubeChannel', {
   total_subscriber_count: {
     type: DataTypes.INTEGER,
     allowNull: true
+  },
+  channel_email: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'youtube_channels',
