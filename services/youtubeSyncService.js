@@ -50,9 +50,12 @@ async function syncYouTubeChannelData({
   };
 
   // Nếu chưa có channelDbId, tra cứu từ DB
+  let existingChannel = null;
   if (!channelDbId) {
-    const dbChannel = await YouTubeChannel.findOne({ where: { channel_id: channelId } });
-    channelDbId = dbChannel ? dbChannel.id : null;
+    existingChannel = await YouTubeChannel.findOne({ where: { channel_id: channelId } });
+    channelDbId = existingChannel ? existingChannel.id : null;
+  } else {
+    existingChannel = await YouTubeChannel.findOne({ where: { id: channelDbId } });
   }
 
   // Lấy access token từ database nếu không cung cấp
@@ -130,7 +133,7 @@ async function syncYouTubeChannelData({
     is_monitized: null,
     total_view_count: totalViewCount,
     total_subscriber_count: totalSubscriberCount,
-    channel_email: channelEmail || null,
+    channel_email: channelEmail !== null ? channelEmail : (existingChannel ? existingChannel.channel_email : null),
   });
 
   channelDbId = dbChannel[0].id || dbChannel.id;
