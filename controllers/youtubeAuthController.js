@@ -199,7 +199,8 @@ const revokeAuth = async (req, res) => {
 const handleCallbackAndRedirect = (req, res) => {
   const { code } = req.query;
   const frontendUrl = process.env.FRONTEND_URL;
-  res.redirect(`${frontendUrl}/oauth-success?code=${code}`);
+  const frontEndPort = process.env.FRONTEND_PORT;
+  res.redirect(`${frontendUrl}:${frontEndPort}/oauth-success?code=${code}`);
 };
 
 /**
