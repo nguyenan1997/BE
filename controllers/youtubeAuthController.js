@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 const axios = require('axios');
 require('dotenv').config();
+const { getToken } = require('../utils/tokenStore'); // Thêm dòng này ở đầu file nếu chưa có
 
 /**
  * @swagger
@@ -244,18 +245,23 @@ const handleCallbackAndRedirect = (req, res) => {
 const finishOAuth = async (req, res) => {
   try {
     const { code } = req.body;
-    // Lấy userId từ JWT
-    let token = null;
-    if (req.headers && req.headers.authorization) {
-      const parts = req.headers.authorization.split(' ');
-      if (parts.length === 2 && parts[0] === 'Bearer') token = parts[1];
-    }
+    // Lấy userId từ JWT (hỗ trợ cả hash và JWT gốc)
+    // 1. Lấy token từ header Authorization (Bearer <token>)
+    let token = req.headers?.authorization?.split(' ')[1];
     let userId = null;
     if (token) {
       try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.userId;
-      } catch (e) {}
+        // 2. Lấy JWT thật từ token đã hash
+        const { originalToken = token } = (await getToken(token)) || {};
+        // 3. Kiểm tra định dạng JWT (phải có 3 phần, phân tách bởi dấu chấm)
+        if (!originalToken.includes('.') || originalToken.split('.').length !== 3)
+          return res.status(401).json({ success: false, error: 'Invalid token format' });
+        // 4. Verify JWT và lấy userId
+        userId = jwt.verify(originalToken, process.env.JWT_SECRET).userId;
+      } catch (e) {
+        // 5. Nếu lỗi, trả về thông báo lỗi rõ ràng
+        return res.status(401).json({ success: false, error: 'Invalid or malformed JWT token', details: e.message });
+      }
     }
     if (!userId) return res.status(401).json({ success: false, error: 'Missing userId from JWT' });
 
