@@ -8,10 +8,10 @@ const GoogleAccessToken = require('./GoogleAccessToken');
 const UserSchedule = require('./UserSchedule');
 const UserChannel = require('./UserChannel');
 
-// User 1-1 UserSchedule
-User.hasOne(UserSchedule, {
+// User 1-n UserSchedule
+User.hasMany(UserSchedule, {
   foreignKey: 'user_id',
-  as: 'user_schedule'
+  as: 'user_schedules'
 });
 UserSchedule.belongsTo(User, {
   foreignKey: 'user_id',

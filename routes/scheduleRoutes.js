@@ -1,10 +1,11 @@
 const express = require('express');
 const { 
-  getSchedule, 
-  createOrUpdateScheduleHandler, 
+  getSchedules, 
+  createScheduleHandler, 
   toggleScheduleStatus, 
   deleteUserSchedule, 
-  runScheduleNow 
+  runScheduleNow, 
+  updateScheduleHandler 
 } = require('../controllers/scheduleController');
 const { authenticateToken } = require('../middleware/authMiddleware');
 
@@ -13,19 +14,22 @@ const router = express.Router();
 // Apply authentication middleware to all routes
 router.use(authenticateToken);
 
-// GET /api/schedules - Lấy lịch của user
-router.get('/', getSchedule);
+// GET /api/schedules - Lấy tất cả lịch của user
+router.get('/', getSchedules);
 
-// POST /api/schedules - Tạo hoặc cập nhật lịch
-router.post('/', createOrUpdateScheduleHandler);
+// POST /api/schedules - Tạo mới lịch
+router.post('/', createScheduleHandler);
 
-// PATCH /api/schedules/toggle - Bật/tắt lịch
-router.patch('/toggle', toggleScheduleStatus);
+// PATCH /api/schedules/:id/toggle - Bật/tắt lịch cụ thể
+router.patch('/:id/toggle', toggleScheduleStatus);
 
-// DELETE /api/schedules - Xóa lịch
-router.delete('/', deleteUserSchedule);
+// DELETE /api/schedules/:id - Xóa lịch cụ thể
+router.delete('/:id', deleteUserSchedule);
 
-// POST /api/schedules/run-now - Chạy lịch ngay
-router.post('/run-now', runScheduleNow);
+// POST /api/schedules/:id/run-now - Chạy lịch cụ thể
+router.post('/:id/run-now', runScheduleNow);
+
+// PUT /api/schedules/:id - Sửa toàn bộ thông tin một lịch cụ thể
+router.put('/:id', updateScheduleHandler);
 
 module.exports = router; 

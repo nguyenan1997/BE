@@ -243,6 +243,103 @@ async function getSchedulesToRun() {
   }
 }
 
+/**
+ * Tạo lịch mới cho user
+ * @param {string} userId - ID của user
+ * @param {Object} scheduleData - Dữ liệu lịch
+ */
+async function createSchedule(userId, scheduleData) {
+  try {
+    const { time_of_day, start_date, is_active = true } = scheduleData;
+    const nextRunAt = calculateNextRun(time_of_day, start_date);
+    const newSchedule = await UserSchedule.create({
+      user_id: userId,
+      time_of_day,
+      start_date,
+      is_active,
+      next_run_at: nextRunAt
+    });
+    return newSchedule;
+  } catch (error) {
+    console.error('Error creating schedule:', error);
+    throw error;
+  }
+}
+
+/**
+ * Lấy tất cả lịch của user
+ * @param {string} userId - ID của user
+ */
+async function getUserSchedules(userId) {
+  try {
+    const schedules = await UserSchedule.findAll({
+      where: { user_id: userId }
+    });
+    return schedules;
+  } catch (error) {
+    console.error('Error getting user schedules:', error);
+    throw error;
+  }
+}
+
+/**
+ * Bật/tắt lịch cụ thể
+ * @param {string} scheduleId - ID của schedule
+ * @param {boolean} isActive - Trạng thái bật/tắt
+ */
+async function toggleSchedule(scheduleId, isActive) {
+  try {
+    const schedule = await UserSchedule.findByPk(scheduleId);
+    if (!schedule) throw new Error('Schedule not found');
+    await schedule.update({ is_active: isActive });
+    return schedule;
+  } catch (error) {
+    console.error('Error toggling schedule:', error);
+    throw error;
+  }
+}
+
+/**
+ * Xóa lịch cụ thể
+ * @param {string} scheduleId - ID của schedule
+ */
+async function deleteSchedule(scheduleId) {
+  try {
+    const schedule = await UserSchedule.findByPk(scheduleId);
+    if (!schedule) throw new Error('Schedule not found');
+    await schedule.destroy();
+    return { success: true, message: 'Schedule deleted successfully' };
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sửa thông tin một lịch cụ thể
+ * @param {string} scheduleId - ID của schedule
+ * @param {Object} updateData - Dữ liệu cần update
+ */
+async function updateSchedule(scheduleId, updateData) {
+  try {
+    const schedule = await UserSchedule.findByPk(scheduleId);
+    if (!schedule) throw new Error('Schedule not found');
+    // Nếu có time_of_day hoặc start_date thì tính lại next_run_at
+    let nextRunAt = schedule.next_run_at;
+    if (updateData.time_of_day || updateData.start_date) {
+      const time = updateData.time_of_day || schedule.time_of_day;
+      const date = updateData.start_date || schedule.start_date;
+      nextRunAt = calculateNextRun(time, date);
+      updateData.next_run_at = nextRunAt;
+    }
+    await schedule.update(updateData);
+    return schedule;
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   createOrUpdateSchedule,
   getUserSchedule,
@@ -250,5 +347,8 @@ module.exports = {
   deleteSchedule,
   executeUserSchedule,
   getSchedulesToRun,
-  calculateNextRun
+  calculateNextRun,
+  createSchedule,
+  getUserSchedules,
+  updateSchedule
 }; 
