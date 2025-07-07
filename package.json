@@ -19,7 +19,7 @@
     "mvc",
     "api"
   ],
-  "author": "Your Name",
+  "author": "nguyenan1997",
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
