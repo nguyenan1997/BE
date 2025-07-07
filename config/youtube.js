@@ -6,7 +6,7 @@ const youtubeConfig = {
   clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
   redirectUri: process.env.YOUTUBE_REDIRECT_URI || 'http://localhost:3000/auth/youtube/callback',
 
-  // Scopes needed for YouTube Analytics API (revenue data)
+  // Scopes needed for YouTube Analytics API
   scopes: [
     'openid',
     'email',
