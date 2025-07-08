@@ -1,6 +1,5 @@
 const UserChannel = require("../models/UserChannel");
 const { YouTubeChannel } = require("../models");
-const { syncYouTubeChannelData }= require("../services/youtubeSyncService");
 const syncQueue = require('../queues/syncQueue');
 
 // Get sync status và thống kê

@@ -8,6 +8,9 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
+const { Op } = require('sequelize');
+const cron = require('node-cron');
+const { cleanupHistoryLogs } = require('./utils/scheduleCron');
 
 const { sequelize } = require('./config/database');
 // Load models and relationships
@@ -154,6 +157,11 @@ const startServer = async () => {
     
     // Initialize schedule cron
     initializeScheduleCron();
+    
+    // Cron job dọn dẹp lịch sử đồng bộ cũ hơn 30 ngày, chạy lúc 3h sáng mỗi ngày
+    cron.schedule('0 3 * * *', async () => {
+      await cleanupHistoryLogs();
+    });
     
     server.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
