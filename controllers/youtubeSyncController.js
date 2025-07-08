@@ -1,6 +1,7 @@
 const UserChannel = require("../models/UserChannel");
 const { YouTubeChannel } = require("../models");
 const { syncYouTubeChannelData }= require("../services/youtubeSyncService");
+const syncQueue = require('../queues/syncQueue');
 
 // Get sync status và thống kê
 const getSyncStatus = async (req, res) => {
@@ -123,77 +124,32 @@ const refreshAllChannelData = async (req, res) => {
   try {
     const userId = req.currentUser?.id;
     if (!userId) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Unauthorized: userId missing" });
+      return res.status(401).json({ success: false, message: "Unauthorized: userId missing" });
     }
 
     const links = await UserChannel.findAll({
       where: { user_id: userId, is_active: true },
     });
     if (!links.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No channels found for this user." });
+      return res.status(404).json({ success: false, message: "No channels found for this user." });
     }
 
-    const results = [];
+    // Đẩy job vào queue cho từng channel
+    const jobIds = [];
     for (const link of links) {
-      try {
-        const channel = await YouTubeChannel.findOne({
-          where: { id: link.channel_db_id },
-        });
-        if (!channel) {
-          results.push({
-            channelDbId: link.channel_db_id,
-            channelId: null,
-            success: false,
-            error: "Channel not found in database",
-          });
-          continue;
-        }
-        const result = await syncYouTubeChannelData({
-          userId,
-          channelId: channel.channel_id,
-          channelDbId: channel.id,
-        });
-        results.push({
-          channelDbId: link.channel_db_id,
-          channelId: channel.channel_id,
-          success: true,
-          result,
-        });
-      } catch (err) {
-        let channel = null;
-        try {
-          channel = await YouTubeChannel.findOne({
-            where: { id: link.channel_db_id },
-          });
-        } catch (err) {
-          console.error("Error finding channel:", err);
-        }
-        let errorMsg = err.message;
-        if (
-          errorMsg.includes("not eligible for analytics") ||
-          errorMsg.includes("status code 403") ||
-          errorMsg.includes("monetization")
-        ) {
-          errorMsg =
-            "This channel is not eligible for analytics or monetization.";
-        }
-        results.push({
-          channelDbId: link.channel_db_id,
-          channelId: channel ? channel.channel_id : null,
-          success: false,
-          error: errorMsg,
-        });
-      }
+      const channel = await YouTubeChannel.findOne({ where: { id: link.channel_db_id } });
+      const job = await syncQueue.add('sync-channel', {
+        userId,
+        channelDbId: link.channel_db_id,
+        channelId: channel.channel_id
+      });
+      jobIds.push({ channelDbId: link.channel_db_id, jobId: job.id });
     }
-    res.json({ success: true, results });
+
+    // Trả về ngay cho frontend danh sách jobId
+    res.json({ success: true, jobs: jobIds });
   } catch (error) {
-    res
-      .status(500)
-      .json({ success: false, message: error.message, error: error.stack });
+    res.status(500).json({ success: false, message: error.message, error: error.stack });
   }
 };
 

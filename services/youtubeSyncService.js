@@ -7,6 +7,7 @@ const {
   Video,
   VideoStatistics,
   GoogleAccessToken,
+  YoutubeHistoryLogs
 } = require("../models");
 const {
   refreshAccessToken,
@@ -26,6 +27,7 @@ const ChannelViolation = require('../models/ChannelViolation');
  * @param {string} params.tokenType
  * @param {string|Date} params.expiresAt
  * @param {string} params.channelEmail
+ * @param {string} params.jobId
  */
 async function syncYouTubeChannelData({
   userId,
@@ -37,6 +39,7 @@ async function syncYouTubeChannelData({
   tokenType = null,
   expiresAt = null,
   channelEmail = null,
+  jobId = null
 }) {
   // Helper lấy field an toàn
   const safe = (obj, path, def = null) => {
@@ -93,6 +96,13 @@ async function syncYouTubeChannelData({
       );
     }
   }
+
+  // Lấy dữ liệu cũ để tính diff
+  const oldChannel = existingChannel;
+  const oldSub = oldChannel ? Number(oldChannel.total_subscriber_count) : 0;
+  const oldView = oldChannel ? Number(oldChannel.total_view_count) : 0;
+  const oldVideos = await Video.findAll({ where: { channel_db_id: channelDbId } });
+  const oldVideoIds = oldVideos.map(v => v.video_id);
 
   // 1. Lấy thông tin kênh
   let channelRes;
@@ -358,7 +368,45 @@ async function syncYouTubeChannelData({
     }
   }
 
-  return {
+  // Sau khi đã lấy xong videoIds từ API
+  // Tính toán diff
+  const newVideoIds = videoIds;
+  // Lấy thông tin chi tiết các video mới
+  let newVideos = [];
+  if (newVideoIds.length > 0) {
+    const newVideoObjs = await Video.findAll({
+      where: {
+        channel_db_id: channelDbId,
+        video_id: newVideoIds.filter(id => !oldVideoIds.includes(id))
+      }
+    });
+    newVideos = newVideoObjs.map(v => ({
+      id: v.video_id,
+      title: v.title,
+      published_at: v.published_at,
+      thumbnail_url: v.thumbnail_url
+    }));
+  }
+  const removedVideos = oldVideoIds.filter(id => !newVideoIds.includes(id));
+  const subscriberDiff = totalSubscriberCount - oldSub;
+  const viewDiff = totalViewCount - oldView;
+  const isFirstSync = !oldChannel;
+  let diff = {
+    newVideos,
+    removedVideos,
+    subscriberDiff,
+    viewDiff
+  };
+  if (isFirstSync) {
+    diff.isFirstSync = true;
+    diff.channel = {
+      id: channel.id,
+      title: safe(channel, 'snippet.title'),
+      customUrl: safe(channel, 'snippet.customUrl')
+    };
+  }
+
+  const result = {
     success: !analyticsError,
     analyticsError,
     message: analyticsError
@@ -366,7 +414,18 @@ async function syncYouTubeChannelData({
       : "YouTube data synced successfully with revenue data",
     channelRevenue: channelStatsRows.reduce((sum, row) => sum + (row[1] || 0), 0),
     videosProcessed: videoIds.length,
+    diff
   };
+  // Ghi log lịch sử đồng bộ
+  await YoutubeHistoryLogs.create({
+    channelDbId,
+    jobId,
+    status: result.success ? 'success' : 'failed',
+    result: JSON.stringify(result),
+    diff,
+    finishedAt: new Date()
+  });
+  return result;
 }
 
 /**
