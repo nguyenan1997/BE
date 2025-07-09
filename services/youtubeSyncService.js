@@ -7,6 +7,7 @@ const {
   Video,
   VideoStatistics,
   GoogleAccessToken,
+  YoutubeHistoryLogs
 } = require("../models");
 const {
   refreshAccessToken,
@@ -26,6 +27,7 @@ const ChannelViolation = require('../models/ChannelViolation');
  * @param {string} params.tokenType
  * @param {string|Date} params.expiresAt
  * @param {string} params.channelEmail
+ * @param {string} params.jobId
  */
 async function syncYouTubeChannelData({
   userId,
@@ -37,6 +39,7 @@ async function syncYouTubeChannelData({
   tokenType = null,
   expiresAt = null,
   channelEmail = null,
+  jobId = null
 }) {
   // Helper lấy field an toàn
   const safe = (obj, path, def = null) => {
@@ -93,6 +96,13 @@ async function syncYouTubeChannelData({
       );
     }
   }
+
+  // Lấy dữ liệu cũ để tính diff
+  const oldChannel = existingChannel;
+  const oldSub = oldChannel ? Number(oldChannel.total_subscriber_count) : 0;
+  const oldView = oldChannel ? Number(oldChannel.total_view_count) : 0;
+  const oldVideos = await Video.findAll({ where: { channel_db_id: channelDbId } });
+  const oldVideoIds = oldVideos.map(v => v.video_id);
 
   // 1. Lấy thông tin kênh
   let channelRes;
@@ -358,14 +368,37 @@ async function syncYouTubeChannelData({
     }
   }
 
+  // Sau khi đã lấy xong videoIds từ API
+  // Lấy toàn bộ video hiện tại của channel
+  const allVideos = await Video.findAll({
+    where: { channel_db_id: channelDbId }
+  });
+  const list_video_new = allVideos.map(v => ({
+    id: v.video_id,
+    title: v.title,
+    published_at: v.published_at,
+    thumbnail_url: v.thumbnail_url
+  }));
+
+  let result;
+  if (!analyticsError) {
+    result = "Channel has been sync success";
+  } else {
+    result = analyticsError || "Sync failed for unknown reason";
+  }
+
+  // Ghi log lịch sử đồng bộ
+  await YoutubeHistoryLogs.create({
+    channelDbId,
+    jobId,
+    status: !analyticsError ? 'success' : 'failed',
+    result, // result giờ chỉ là string
+    list_video_new,
+    finishedAt: new Date()
+  });
   return {
-    success: !analyticsError,
-    analyticsError,
-    message: analyticsError
-      ? "Channel not eligible for analytics, but videos have been saved."
-      : "YouTube data synced successfully with revenue data",
-    channelRevenue: channelStatsRows.reduce((sum, row) => sum + (row[1] || 0), 0),
-    videosProcessed: videoIds.length,
+    status: !analyticsError ? 'success' : 'failed',
+    result
   };
 }
 

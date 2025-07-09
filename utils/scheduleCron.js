@@ -1,5 +1,7 @@
 const cron = require('node-cron');
 const { getSchedulesToRun, executeUserSchedule } = require('../services/scheduleService');
+const { Op } = require('sequelize');
+const { YoutubeHistoryLogs } = require('../models');
 
 function initializeScheduleCron() {
   console.log('⏰ Initializing schedule cron job...');
@@ -26,6 +28,21 @@ function initializeScheduleCron() {
   console.log('✅ Schedule cron job initialized');
 }
 
+async function cleanupHistoryLogs() {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const deleted = await YoutubeHistoryLogs.destroy({
+    where: {
+      createdAt: { [Op.lt]: cutoff }
+    }
+  });
+  if (deleted > 0) {
+    console.log(`🧹 Đã xóa ${deleted} bản ghi lịch sử đồng bộ cũ hơn 30 ngày.`);
+  } else {
+    console.log('🧹 Không có bản ghi lịch sử đồng bộ nào cần xóa.');
+  }
+}
+
 module.exports = {
-  initializeScheduleCron
+  initializeScheduleCron,
+  cleanupHistoryLogs
 }; 

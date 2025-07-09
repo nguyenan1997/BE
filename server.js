@@ -5,7 +5,12 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
+const http = require('http');
+const { Server } = require('socket.io');
 require('dotenv').config();
+const { Op } = require('sequelize');
+const cron = require('node-cron');
+const { cleanupHistoryLogs } = require('./utils/scheduleCron');
 
 const { sequelize } = require('./config/database');
 // Load models and relationships
@@ -22,6 +27,41 @@ const { errorHandler } = require('./middleware/errorHandler');
 const { initializeScheduleCron } = require('./utils/scheduleCron');
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true
+  }
+});
+
+// Lưu mapping userId <-> socketId
+const userSocketMap = new Map();
+
+io.on('connection', (socket) => {
+  // Nhận userId từ client khi kết nối
+  socket.on('register', (userId) => {
+    userSocketMap.set(userId, socket.id);
+  });
+  // Lắng nghe event job-status từ worker
+  socket.on('job-status', (data) => {
+    const { userId } = data;
+    const targetSocketId = userSocketMap.get(userId);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('job-status', data);
+    }
+  });
+  // Xoá mapping khi disconnect
+  socket.on('disconnect', () => {
+    for (const [userId, sid] of userSocketMap.entries()) {
+      if (sid === socket.id) userSocketMap.delete(userId);
+    }
+  });
+});
+
+app.set('io', io);
+app.set('userSocketMap', userSocketMap);
+
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
@@ -118,7 +158,12 @@ const startServer = async () => {
     // Initialize schedule cron
     initializeScheduleCron();
     
-    app.listen(PORT, () => {
+    // Cron job dọn dẹp lịch sử đồng bộ cũ hơn 30 ngày, chạy lúc 3h sáng mỗi ngày
+    cron.schedule('0 3 * * *', async () => {
+      await cleanupHistoryLogs();
+    });
+    
+    server.listen(PORT, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
@@ -132,4 +177,4 @@ const startServer = async () => {
 
 startServer();
 
-module.exports = app; 
+module.exports = { app, io, userSocketMap }; 
