@@ -3,7 +3,7 @@ const IORedis = require('ioredis');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 const { io: ioClient } = require('socket.io-client');
 
-const connection = new IORedis(process.env.REDIS_URL || 'redis://127.0.0.1:6379', {
+const connection = new IORedis(`${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, {
   maxRetriesPerRequest: null
 });
 
