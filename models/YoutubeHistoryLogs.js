@@ -11,10 +11,6 @@ const YoutubeHistoryLogs = sequelize.define('YoutubeHistoryLogs', {
     type: DataTypes.UUID,
     allowNull: false,
   },
-  jobId: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
   status: {
     type: DataTypes.ENUM('success', 'failed'),
     allowNull: false,
