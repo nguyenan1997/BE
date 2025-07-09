@@ -300,8 +300,8 @@ const finishOAuth = async (req, res) => {
     }
 
     const channelId = channelRes.data.items[0].id;
-    // Gọi syncYouTubeChannelData và truyền đủ các trường token
-    const syncResult = await syncYouTubeChannelData({
+    // Đẩy job vào queue thay vì gọi trực tiếp syncYouTubeChannelData
+    const job = await require('../queues/syncQueue').add('sync-channel', {
       userId,
       channelId,
       accessToken: result.tokens.access_token,
@@ -314,8 +314,9 @@ const finishOAuth = async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'YouTube authorization & sync successful',
-      syncResult
+      message: 'YouTube is authorization successful. Sync job has been queued.',
+      jobId: job.id,
+      channelId
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
