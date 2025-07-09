@@ -15,6 +15,7 @@ const socket = ioClient(SOCKET_URL, { transports: ['websocket'] });
 const worker = new Worker('syncQueue', async job => {
   const { channelDbId } = job.data;
   socket.emit('job-status', {
+    userId: job.data.userId,
     jobId: job.id,
     channelDbId,
     status: 'processing',
@@ -23,6 +24,7 @@ const worker = new Worker('syncQueue', async job => {
   try {
     const result = await syncYouTubeChannelData({ ...job.data, jobId: job.id });
     socket.emit('job-status', {
+      userId: job.data.userId,
       jobId: job.id,
       channelDbId,
       status: 'success',
@@ -32,6 +34,7 @@ const worker = new Worker('syncQueue', async job => {
     return result;
   } catch (error) {
     socket.emit('job-status', {
+      userId: job.data.userId,
       jobId: job.id,
       channelDbId,
       status: 'failed',
