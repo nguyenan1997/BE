@@ -23,6 +23,7 @@ const channelRoutes = require('./routes/channelRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const syncHistoryRoutes = require('./routes/syncHistoryRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { initializeScheduleCron } = require('./utils/scheduleCron');
 
@@ -121,6 +122,7 @@ app.use('/api/youtube-sync', youtubeSyncRoutes);
 app.use('/api', videoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/sync-history', syncHistoryRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ 
