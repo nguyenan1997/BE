@@ -390,7 +390,6 @@ async function syncYouTubeChannelData({
   // Ghi log lịch sử đồng bộ
   await YoutubeHistoryLogs.create({
     channelDbId,
-    jobId,
     status: !analyticsError ? 'success' : 'failed',
     result, // result giờ chỉ là string
     list_video_new,
