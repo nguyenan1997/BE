@@ -3,12 +3,13 @@ const IORedis = require('ioredis');
 const { syncYouTubeChannelData } = require('../services/youtubeSyncService');
 const { io: ioClient } = require('socket.io-client');
 
+
 const connection = new IORedis(`${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`, {
   maxRetriesPerRequest: null
 });
 
 // Kết nối tới Socket.IO server
-const SOCKET_URL = `${process.env.SOCKET_URL}:${process.env.SOCKET_PORT}`;
+const SOCKET_URL = `${process.env.SOCKET_HOST}:${process.env.SOCKET_PORT}`;
 const socket = ioClient(SOCKET_URL, { transports: ['websocket'] });
 
 // Worker lắng nghe queue 'syncQueue'
