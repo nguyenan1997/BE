@@ -7,8 +7,8 @@ const connection = new IORedis(process.env.REDIS_URL || 'redis://127.0.0.1:6379'
   maxRetriesPerRequest: null
 });
 
-// Kết nối tới Socket.IO server (mặc định localhost:3000)
-const SOCKET_URL = process.env.SOCKET_URL || 'http://localhost:3000';
+// Kết nối tới Socket.IO server
+const SOCKET_URL = `${process.env.SOCKET_URL}:${process.env.SOCKET_PORT}`;
 const socket = ioClient(SOCKET_URL, { transports: ['websocket'] });
 
 // Worker lắng nghe queue 'syncQueue'

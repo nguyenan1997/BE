@@ -23,7 +23,7 @@ const YoutubeHistoryLogs = sequelize.define('YoutubeHistoryLogs', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  diff: {
+  list_video_new: {
     type: DataTypes.JSONB,
     allowNull: true,
   },

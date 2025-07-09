@@ -369,63 +369,37 @@ async function syncYouTubeChannelData({
   }
 
   // Sau khi đã lấy xong videoIds từ API
-  // Tính toán diff
-  const newVideoIds = videoIds;
-  // Lấy thông tin chi tiết các video mới
-  let newVideos = [];
-  if (newVideoIds.length > 0) {
-    const newVideoObjs = await Video.findAll({
-      where: {
-        channel_db_id: channelDbId,
-        video_id: newVideoIds.filter(id => !oldVideoIds.includes(id))
-      }
-    });
-    newVideos = newVideoObjs.map(v => ({
-      id: v.video_id,
-      title: v.title,
-      published_at: v.published_at,
-      thumbnail_url: v.thumbnail_url
-    }));
-  }
-  const removedVideos = oldVideoIds.filter(id => !newVideoIds.includes(id));
-  const subscriberDiff = totalSubscriberCount - oldSub;
-  const viewDiff = totalViewCount - oldView;
-  const isFirstSync = !oldChannel;
-  let diff = {
-    newVideos,
-    removedVideos,
-    subscriberDiff,
-    viewDiff
-  };
-  if (isFirstSync) {
-    diff.isFirstSync = true;
-    diff.channel = {
-      id: channel.id,
-      title: safe(channel, 'snippet.title'),
-      customUrl: safe(channel, 'snippet.customUrl')
-    };
+  // Lấy toàn bộ video hiện tại của channel
+  const allVideos = await Video.findAll({
+    where: { channel_db_id: channelDbId }
+  });
+  const list_video_new = allVideos.map(v => ({
+    id: v.video_id,
+    title: v.title,
+    published_at: v.published_at,
+    thumbnail_url: v.thumbnail_url
+  }));
+
+  let result;
+  if (!analyticsError) {
+    result = "Channel has been sync success";
+  } else {
+    result = analyticsError || "Sync failed for unknown reason";
   }
 
-  const result = {
-    success: !analyticsError,
-    analyticsError,
-    message: analyticsError
-      ? "Channel not eligible for analytics, but videos have been saved."
-      : "YouTube data synced successfully with revenue data",
-    channelRevenue: channelStatsRows.reduce((sum, row) => sum + (row[1] || 0), 0),
-    videosProcessed: videoIds.length,
-    diff
-  };
   // Ghi log lịch sử đồng bộ
   await YoutubeHistoryLogs.create({
     channelDbId,
     jobId,
-    status: result.success ? 'success' : 'failed',
-    result: JSON.stringify(result),
-    diff,
+    status: !analyticsError ? 'success' : 'failed',
+    result, // result giờ chỉ là string
+    list_video_new,
     finishedAt: new Date()
   });
-  return result;
+  return {
+    status: !analyticsError ? 'success' : 'failed',
+    result
+  };
 }
 
 /**
