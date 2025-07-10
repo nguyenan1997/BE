@@ -235,7 +235,7 @@ const getChannelStatisticsController = async (req, res) => {
  *         required: true
  *         schema:
  *           type: string
- *         description: Từ khóa tìm kiếm (tên channel, mô tả, custom URL, channel ID)
+ *         description: Từ khóa tìm kiếm (theo tên channel)
  *       - in: query
  *         name: page
  *         schema:

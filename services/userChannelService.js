@@ -131,12 +131,7 @@ const searchChannels = async (userId, searchTerm, page = 1, limit = 10) => {
   const { count, rows: channelRows } = await YouTubeChannel.findAndCountAll({
     where: {
       id: channelDbIds,
-      [Op.or]: [
-        { channel_title: { [Op.iLike]: `%${searchTerm}%` } },
-        { channel_description: { [Op.iLike]: `%${searchTerm}%` } },
-        { channel_custom_url: { [Op.iLike]: `%${searchTerm}%` } },
-        { channel_id: { [Op.iLike]: `%${searchTerm}%` } }
-      ]
+      [Op.or]: [{ channel_title: { [Op.iLike]: `%${searchTerm}%` } }]
     },
     offset,
     limit,
