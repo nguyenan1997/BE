@@ -1,4 +1,8 @@
-const { getTotalViewsOfUserChannels, getTotalRevenueOfUserChannels, getRecentChannelsOfUser } = require('../services/dashboardService');
+const {
+  getTotalViewsOfUserChannels,
+  getTotalRevenueOfUserChannels,
+  getRecentChannelsOfUser,
+} = require("../services/dashboardService");
 
 /**
  * @swagger
@@ -164,4 +168,4 @@ const getRecentChannels = async (req, res) => {
   }
 };
 
-module.exports = { getTotalViews, getTotalRevenue, getRecentChannels }; 
+module.exports = { getTotalViews, getTotalRevenue, getRecentChannels };

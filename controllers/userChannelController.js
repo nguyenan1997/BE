@@ -1,4 +1,4 @@
-const { getUserChannels, deleteChannelById, getChannelStatistics } = require('../services/userChannelService');
+const { getUserChannels, deleteChannelById, getChannelStatistics, searchChannels } = require('../services/userChannelService');
 const UserChannel = require('../models/UserChannel'); // Added missing import
 
 /**
@@ -198,7 +198,7 @@ const deleteChannel = async (req, res) => {
 const getChannelStatisticsController = async (req, res) => {
   try {
     const { channelDbId } = req.params;
-    const days = Math.min(parseInt(req.query.days) || 7, 30); // Giới hạn tối đa 30 ngày
+    const days = Math.min(parseInt(req.query.days), 7);
     const userId = req.currentUser.id;
     
     // Kiểm tra quyền truy cập channel
@@ -209,7 +209,7 @@ const getChannelStatisticsController = async (req, res) => {
     if (!userChannel) {
       return res.status(403).json({ 
         success: false, 
-        message: 'Bạn không có quyền truy cập channel này' 
+        message: 'You do not have permission to access this channel' 
       });
     }
     
@@ -220,8 +220,90 @@ const getChannelStatisticsController = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/channels/search:
+ *   get:
+ *     summary: Tìm kiếm channel theo từ khóa
+ *     tags:
+ *       - Channel
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm (tên channel, mô tả, custom URL, channel ID)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số lượng channel mỗi trang
+ *     responses:
+ *       200:
+ *         description: Danh sách channel tìm được
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 total:
+ *                   type: integer
+ *                   example: 5
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 10
+ *                 channels:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/YouTubeChannel'
+ *       400:
+ *         description: Thiếu từ khóa tìm kiếm
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Lỗi server
+ */
+const searchChannelsController = async (req, res) => {
+  try {
+    const { q: searchTerm, page: pageParam, limit: limitParam } = req.query;
+    
+    if (!searchTerm || searchTerm.trim() === '') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Search keyword cannot be empty' 
+      });
+    }
+    
+    const userId = req.currentUser.id;
+    const page = parseInt(pageParam) || 1;
+    const limit = parseInt(limitParam) || 10;
+    
+    const result = await searchChannels(userId, searchTerm.trim(), page, limit);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   getAllUserChannels,
   deleteChannel,
-  getChannelStatisticsController
+  getChannelStatisticsController,
+  searchChannelsController
 }; 
