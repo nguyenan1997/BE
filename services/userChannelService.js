@@ -78,7 +78,32 @@ const deleteChannelById = async (channelDbId, userId, userRole) => {
   return true;
 };
 
+/**
+ * Lấy thống kê 7 ngày cho 1 channel cụ thể
+ * @param {string} channelDbId
+ * @param {number} days
+ */
+const getChannelStatistics = async (channelDbId, days = 7) => {
+  const stats = await ChannelStatistics.findAll({
+    where: { channel_db_id: channelDbId },
+    order: [['date', 'DESC']],
+    limit: days
+  });
+  
+  return stats.map(row => ({
+    date: row.date,
+    view_count: row.view_count || 0,
+    like_count: row.like_count || 0,
+    subscriber_count: row.subscriber_count || 0,
+    estimated_revenue: row.estimated_revenue || 0,
+    comment_count: row.comment_count || 0,
+    share_count: row.share_count || 0,
+    watch_time_minutes: row.watch_time_minutes || 0
+  })).sort((a, b) => a.date.localeCompare(b.date));
+};
+
 module.exports = {
   getUserChannels,
   deleteChannelById,
+  getChannelStatistics
 }; 
