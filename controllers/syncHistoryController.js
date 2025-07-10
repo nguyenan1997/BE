@@ -3,7 +3,50 @@ const UserChannel = require('../models/UserChannel');
 
 /**
  * @swagger
- * /api/sync-history/me/sync-history:
+ * components:
+ *   schemas:
+ *     SyncHistoryLog:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *         channelDbId:
+ *           type: string
+ *           format: uuid
+ *         status:
+ *           type: string
+ *           enum: [success, failed]
+ *         result:
+ *           type: string
+ *         list_video_new:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *               title:
+ *                 type: string
+ *               published_at:
+ *                 type: string
+ *                 format: date-time
+ *               thumbnail_url:
+ *                 type: string
+ *         finishedAt:
+ *           type: string
+ *           format: date-time
+ *         createdAt:
+ *           type: string
+ *           format: date-time
+ *         updatedAt:
+ *           type: string
+ *           format: date-time
+ */
+
+/**
+ * @swagger
+ * /api/sync-history:
  *   get:
  *     summary: Lấy lịch sử đồng bộ của user hiện tại (tất cả channel)
  *     tags: [Sync History]
@@ -47,7 +90,7 @@ const getUserHistoryLogs = async (req, res) => {
 
 /**
  * @swagger
- * /api/sync-history/{channelDbId}/sync-history:
+ * /api/sync-history/{channelDbId}:
  *   get:
  *     summary: Lấy lịch sử đồng bộ của một channel cụ thể
  *     tags: [Sync History]

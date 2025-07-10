@@ -1,4 +1,4 @@
-const { UserChannel, YouTubeChannel, ChannelStatistics } = require('../models');
+const { UserChannel, YouTubeChannel, ChannelStatistics, Video, ChannelViolation, YoutubeHistoryLogs } = require('../models');
 const { Op } = require('sequelize');
 
 const getUserChannels = async (userId, page = 1, limit = 10) => {
@@ -52,6 +52,33 @@ const getUserChannels = async (userId, page = 1, limit = 10) => {
   };
 };
 
+/**
+ * Xoá channel và toàn bộ dữ liệu liên quan
+ * @param {string} channelDbId
+ * @param {string} userId
+ * @param {string} userRole
+ */
+const deleteChannelById = async (channelDbId, userId, userRole) => {
+  // Kiểm tra quyền: admin hoặc owner của channel
+  const userChannel = await UserChannel.findOne({
+    where: { channel_db_id: channelDbId, user_id: userId, is_active: true }
+  });
+  if (userRole !== 'admin' && (!userChannel || !userChannel.is_owner)) {
+    throw new Error('You do not have permission to delete this channel');
+  }
+  // Xoá dữ liệu liên quan
+  await Video.destroy({ where: { channel_db_id: channelDbId } });
+  await ChannelStatistics.destroy({ where: { channel_db_id: channelDbId } });
+  await ChannelViolation.destroy({ where: { channel_db_id: channelDbId } });
+  await YoutubeHistoryLogs.destroy({ where: { channelDbId } });
+  await UserChannel.destroy({ where: { channel_db_id: channelDbId } });
+  // Xoá channel
+  const deleted = await YouTubeChannel.destroy({ where: { id: channelDbId } });
+  if (!deleted) throw new Error('No channel found to delete');
+  return true;
+};
+
 module.exports = {
   getUserChannels,
+  deleteChannelById,
 }; 
