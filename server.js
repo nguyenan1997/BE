@@ -8,7 +8,6 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const http = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
-const { Op } = require('sequelize');
 const cron = require('node-cron');
 const { cleanupHistoryLogs } = require('./utils/scheduleCron');
 

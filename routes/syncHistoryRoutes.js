@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
-router.get('/me/sync-history', authenticateToken, getUserHistoryLogs);
-router.get('/:channelDbId/sync-history', authenticateToken, getChannelHistoryLogs);
+router.get('/', authenticateToken, getUserHistoryLogs);
+router.get('/:channelDbId', authenticateToken, getChannelHistoryLogs);
 
 module.exports = router; 

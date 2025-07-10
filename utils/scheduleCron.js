@@ -9,7 +9,6 @@ function initializeScheduleCron() {
     try {
       const schedulesToRun = await getSchedulesToRun();
       if (schedulesToRun.length === 0) {
-        console.log('📅 No schedules to run');
         return;
       }
       console.log(`📅 Found ${schedulesToRun.length} schedules to run`);
