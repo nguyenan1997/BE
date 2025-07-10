@@ -11,52 +11,76 @@ async function setupFreshDatabase() {
     await sequelize.sync({ force: true });
     console.log('✅ Tất cả bảng đã được tạo thành công');
 
-    // 2. Tạo công ty mẫu
-    console.log('\n2. Tạo công ty mẫu...');
-    const company = await Company.create({
-      name: 'Demo Company',
+    // 2. Tạo công ty chủ tool
+    console.log('\n2. Tạo công ty chủ tool...');
+    const ownerCompany = await Company.create({
+      name: 'ToolCorp',
+      address: '1 Main St',
+      phone: '0999999999',
+      email: 'owner@toolcorp.com',
+      type: 'owner'
+    });
+    console.log('✅ Công ty chủ tool đã được tạo:', ownerCompany.name);
+
+    // 3. Tạo công ty đối tác
+    console.log('\n3. Tạo công ty đối tác...');
+    const partnerCompany = await Company.create({
+      name: 'Demo Partner',
       address: '123 Demo St',
       phone: '0123456789',
-      email: 'company@example.com'
+      email: 'company@example.com',
+      type: 'partner'
     });
-    console.log('✅ Công ty mẫu đã được tạo:', company.name);
+    console.log('✅ Công ty đối tác đã được tạo:', partnerCompany.name);
 
-    // 3. Tạo các vị trí mẫu cho công ty
-    console.log('\n3. Tạo các vị trí mẫu cho công ty...');
-    const managerPosition = await UserPosition.create({ position: 'manager', company_id: company.id });
-    const employeePosition = await UserPosition.create({ position: 'employee', company_id: company.id });
-    console.log('✅ Đã tạo các vị trí: manager, employee');
+    // 4. Tạo các vị trí cho từng công ty
+    console.log('\n4. Tạo các vị trí cho từng công ty...');
+    const ownerManagerPosition = await UserPosition.create({ position: 'manager', company_id: ownerCompany.id });
+    const partnerManagerPosition = await UserPosition.create({ position: 'manager', company_id: partnerCompany.id });
+    const partnerEmployeePosition = await UserPosition.create({ position: 'employee', company_id: partnerCompany.id });
+    console.log('✅ Đã tạo các vị trí cho công ty chủ tool và đối tác');
 
-    // 4. Tạo tài khoản manager (partner_company)
-    console.log('\n4. Tạo tài khoản manager...');
-    const manager = await User.create({
+    // 5. Tạo user manager cho công ty chủ tool
+    console.log('\n5. Tạo user manager cho công ty chủ tool...');
+    const ownerManager = await User.create({
+      username: 'tooladmin',
+      email: 'tooladmin@toolcorp.com',
+      password: 'tooladmin123',
+      fullName: 'ToolCorp Admin',
+      user_position_id: ownerManagerPosition.id
+    });
+    console.log('✅ User manager công ty chủ tool đã được tạo:', ownerManager.email);
+
+    // 6. Tạo manager cho công ty đối tác
+    console.log('\n6. Tạo manager cho công ty đối tác...');
+    const partnerManager = await User.create({
       username: 'partner1',
       email: 'partner1@gmail.com',
       password: 'partner123456',
       fullName: 'Partner Company 1',
-      user_position_id: managerPosition.id
+      user_position_id: partnerManagerPosition.id
     });
-    console.log('✅ Manager đã được tạo:', manager.email);
+    console.log('✅ Manager công ty đối tác đã được tạo:', partnerManager.email);
 
-    // 5. Tạo employee
-    console.log('\n5. Tạo employee...');
+    // 7. Tạo employee cho công ty đối tác
+    console.log('\n7. Tạo employee cho công ty đối tác...');
     const employee = await User.create({
       username: 'employee1',
       email: 'employee1@gmail.com',
       password: 'employee123456',
       fullName: 'Employee Partner 1',
-      user_position_id: employeePosition.id
+      user_position_id: partnerEmployeePosition.id
     });
-    console.log('✅ Employee đã được tạo:', employee.email);
+    console.log('✅ Employee công ty đối tác đã được tạo:', employee.email);
 
-    // 6. Tạo tài khoản demo employee
-    console.log('\n6. Tạo tài khoản demo employee...');
+    // 8. Tạo tài khoản demo employee cho công ty đối tác
+    console.log('\n8. Tạo tài khoản demo employee cho công ty đối tác...');
     const demoUser = await User.create({
       username: 'user1',
       email: 'user1@gmail.com',
       password: 'user123456',
       fullName: 'User 1',
-      user_position_id: employeePosition.id
+      user_position_id: partnerEmployeePosition.id
     });
     console.log('✅ Tài khoản demo đã được tạo:', demoUser.email);
     console.log('Demo user UUID:', demoUser.id);
