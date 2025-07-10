@@ -12,6 +12,7 @@ const tables = [
   'user_channel',
   'youtube_channels',
   'users',
+  'user_position',
   'companies'
 ];
 

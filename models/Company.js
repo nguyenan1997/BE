@@ -22,6 +22,11 @@ const Company = sequelize.define('Company', {
   email: {
     type: DataTypes.STRING(100),
     allowNull: true
+  },
+  type: {
+    type: DataTypes.ENUM('owner', 'partner'),
+    allowNull: false,
+    defaultValue: 'partner'
   }
 }, {
   tableName: 'companies',
