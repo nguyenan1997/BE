@@ -62,6 +62,7 @@ io.on('connection', (socket) => {
 app.set('io', io);
 app.set('userSocketMap', userSocketMap);
 
+const HOST = process.env.HOST || 'localhost';
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
@@ -164,7 +165,7 @@ const startServer = async () => {
       await cleanupHistoryLogs();
     });
     
-    server.listen(PORT, () => {
+    server.listen(PORT, HOST, () => {
       console.log(`🚀 Server is running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`🔗 Health check: http://localhost:${PORT}/health`);
