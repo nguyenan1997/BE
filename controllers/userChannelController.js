@@ -1,4 +1,5 @@
-const { getUserChannels, deleteChannelById } = require('../services/userChannelService');
+const { getUserChannels, deleteChannelById, getChannelStatistics } = require('../services/userChannelService');
+const UserChannel = require('../models/UserChannel'); // Added missing import
 
 /**
  * @swagger
@@ -120,7 +121,107 @@ const deleteChannel = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /api/channels/{channelDbId}/statistics:
+ *   get:
+ *     summary: Lấy thống kê 7 ngày của 1 channel cụ thể (view, like, subscriber, revenue)
+ *     tags:
+ *       - Channel
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: channelDbId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID của channel trong database
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           default: 7
+ *         description: Số ngày gần nhất muốn lấy (tối đa 30 ngày)
+ *     responses:
+ *       200:
+ *         description: Thống kê 7 ngày của channel
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       date:
+ *                         type: string
+ *                         format: date
+ *                         example: "2025-01-15"
+ *                       view_count:
+ *                         type: integer
+ *                         example: 12345
+ *                       like_count:
+ *                         type: integer
+ *                         example: 567
+ *                       subscriber_count:
+ *                         type: integer
+ *                         example: 89
+ *                       estimated_revenue:
+ *                         type: number
+ *                         format: float
+ *                         example: 12.34
+ *                       comment_count:
+ *                         type: integer
+ *                         example: 123
+ *                       share_count:
+ *                         type: integer
+ *                         example: 45
+ *                       watch_time_minutes:
+ *                         type: integer
+ *                         example: 6789
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Không có quyền truy cập channel này
+ *       404:
+ *         description: Không tìm thấy channel
+ *       500:
+ *         description: Lỗi server
+ */
+const getChannelStatisticsController = async (req, res) => {
+  try {
+    const { channelDbId } = req.params;
+    const days = Math.min(parseInt(req.query.days) || 7, 30); // Giới hạn tối đa 30 ngày
+    const userId = req.currentUser.id;
+    
+    // Kiểm tra quyền truy cập channel
+    const userChannel = await UserChannel.findOne({
+      where: { channel_db_id: channelDbId, user_id: userId, is_active: true }
+    });
+    
+    if (!userChannel) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Bạn không có quyền truy cập channel này' 
+      });
+    }
+    
+    const data = await getChannelStatistics(channelDbId, days);
+    res.json({ success: true, data });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   getAllUserChannels,
   deleteChannel,
+  getChannelStatisticsController
 }; 
