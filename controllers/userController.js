@@ -27,11 +27,35 @@ const bcrypt = require('bcryptjs');
 // Get all users (with pagination)
 const getAllUsers = async (req, res, next) => {
   try {
+    const currentUser = req.currentUser;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
+    const whereClause = {};
+    switch (currentUser.role) {
+      case 'superadmin':
+        // Xem được mọi user
+        break;
+      case 'admin':
+        whereClause.role = { [Op.ne]: 'superadmin' };
+        break;
+      case 'partner_company':
+        whereClause.role = 'employee_partner';
+        whereClause.company_id = currentUser.company_id;
+        break;
+      case 'employee_partner':
+        whereClause.id = currentUser.id;
+        break;
+      default:
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to view users.'
+        });
+    }
+
     const { count, rows: users } = await User.findAndCountAll({
+      where: whereClause,
       limit,
       offset,
       order: [['createdAt', 'DESC']]
@@ -80,15 +104,51 @@ const getAllUsers = async (req, res, next) => {
 // Get user by ID
 const getUserById = async (req, res, next) => {
   try {
+    const currentUser = req.currentUser;
     const { id } = req.params;
 
     const user = await User.findByPk(id);
-    
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
+    }
+
+    // Phân quyền xem user
+    switch (currentUser.role) {
+      case 'superadmin':
+        // Xem được mọi user
+        break;
+      case 'admin':
+        if (user.role === 'superadmin') {
+          return res.status(403).json({
+            success: false,
+            message: 'Admin cannot view superadmin.'
+          });
+        }
+        break;
+      case 'partner_company':
+        if (!(user.role === 'employee_partner' && user.company_id === currentUser.company_id)) {
+          return res.status(403).json({
+            success: false,
+            message: 'Partner company can only view their own employee_partner.'
+          });
+        }
+        break;
+      case 'employee_partner':
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'You can only view your own information.'
+          });
+        }
+        break;
+      default:
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to view this user.'
+        });
     }
 
     res.json({
@@ -144,19 +204,43 @@ const updateUser = async (req, res, next) => {
       });
     }
 
-    if (req.currentUser.role !== 'admin' && req.currentUser.id !== user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to update this user.'
-      });
+    // Phân quyền update user
+    const currentUser = req.currentUser;
+    if (currentUser.role === 'superadmin') {
+      // superadmin được sửa mọi user
+    } else if (currentUser.role === 'admin') {
+      if (user.role === 'superadmin' || user.role === 'admin') {
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Admin cannot update other admin or superadmin.'
+          });
+        }
+      }
+    } else if (currentUser.role === 'partner_company') {
+      if (!(user.role === 'employee_partner' && user.company_id === currentUser.company_id)) {
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Partner company can only update their own employee_partner.'
+          });
+        }
+      }
+    } else {
+      if (currentUser.id !== user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to update this user.'
+        });
+      }
     }
 
-    // Nếu không phải admin, không cho phép đổi role và isActive
-    if (req.currentUser.role !== 'admin') {
+    // Nếu không phải superadmin, không cho phép đổi role và isActive
+    if (currentUser.role !== 'superadmin') {
       if ('role' in fieldsToUpdate || 'isActive' in fieldsToUpdate) {
         return res.status(403).json({
           success: false,
-          message: 'You do not have permission to update role or isActive. Only admin can do this.'
+          message: 'You do not have permission to update role or isActive. Only superadmin can do this.'
         });
       }
     }
@@ -243,7 +327,38 @@ const deleteUser = async (req, res, next) => {
       });
     }
 
-    if (req.currentUser.id === user.id) {
+    // Phân quyền delete user
+    const currentUser = req.currentUser;
+    if (currentUser.role === 'superadmin') {
+      // superadmin được xóa mọi user
+    } else if (currentUser.role === 'admin') {
+      if (user.role === 'superadmin' || user.role === 'admin') {
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Admin cannot delete other admin or superadmin.'
+          });
+        }
+      }
+    } else if (currentUser.role === 'partner_company') {
+      if (!(user.role === 'employee_partner' && user.company_id === currentUser.company_id)) {
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Partner company can only delete their own employee_partner.'
+          });
+        }
+      }
+    } else {
+      if (currentUser.id !== user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to delete this user.'
+        });
+      }
+    }
+
+    if (currentUser.id === user.id) {
       return res.status(403).json({
         success: false,
         message: 'Admin cannot delete their own account.'
@@ -297,8 +412,39 @@ const toggleUserStatus = async (req, res, next) => {
       });
     }
 
+    // Phân quyền toggle status
+    const currentUser = req.currentUser;
+    if (currentUser.role === 'superadmin') {
+      // superadmin được bật/tắt mọi user
+    } else if (currentUser.role === 'admin') {
+      if (user.role === 'superadmin' || user.role === 'admin') {
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Admin cannot toggle status for other admin or superadmin.'
+          });
+        }
+      }
+    } else if (currentUser.role === 'partner_company') {
+      if (!(user.role === 'employee_partner' && user.company_id === currentUser.company_id)) {
+        if (currentUser.id !== user.id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Partner company can only toggle status for their own employee_partner.'
+          });
+        }
+      }
+    } else {
+      if (currentUser.id !== user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to toggle status for this user.'
+        });
+      }
+    }
+
     // Không cho phép admin tự vô hiệu hóa chính mình
-    if (req.currentUser.id === user.id) {
+    if (currentUser.id === user.id) {
       return res.status(403).json({
         success: false,
         message: 'Admin cannot deactivate their own account.'
@@ -341,12 +487,35 @@ const toggleUserStatus = async (req, res, next) => {
 // Search users
 const searchUsers = async (req, res, next) => {
   try {
+    const currentUser = req.currentUser;
     const { q, role, isActive } = req.query;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
     const whereClause = {};
+
+    // Phân quyền tìm kiếm user
+    switch (currentUser.role) {
+      case 'superadmin':
+        // Tìm được mọi user
+        break;
+      case 'admin':
+        whereClause.role = { [Op.ne]: 'superadmin' };
+        break;
+      case 'partner_company':
+        whereClause.role = 'employee_partner';
+        whereClause.company_id = currentUser.company_id;
+        break;
+      case 'employee_partner':
+        whereClause.id = currentUser.id;
+        break;
+      default:
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to search users.'
+        });
+    }
 
     // Search by query
     if (q) {

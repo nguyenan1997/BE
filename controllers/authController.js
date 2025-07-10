@@ -66,16 +66,13 @@ const generateToken = (userId) => {
 // Register new user (Admin Only)
 const register = async (req, res, next) => {
   try {
-    // Data already validated by middleware
-    const { username, email, password, fullName } = req.body;
+    const currentUser = req.currentUser;
+    const { username, email, password, fullName, role, company_id, parent_id } = req.body;
 
-    // Check if user already exists
+    // Kiểm tra user đã tồn tại
     const existingUser = await User.findOne({
-      where: {
-        [Op.or]: [{ email }, { username }]
-      }
+      where: { [Op.or]: [{ email }, { username }] }
     });
-
     if (existingUser) {
       return res.status(409).json({
         success: false,
@@ -83,15 +80,45 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create new user
+    // Phân quyền tạo user (dùng switch-case)
+    switch (currentUser.role) {
+      case 'superadmin':
+        // superadmin tạo được mọi loại user
+        break;
+      case 'admin':
+        if (role === 'superadmin' || role === 'admin') {
+          return res.status(403).json({
+            success: false,
+            message: 'Admin cannot create superadmin or admin.'
+          });
+        }
+        break;
+      case 'partner_company':
+        if (role !== 'employee_partner' || company_id !== currentUser.company_id) {
+          return res.status(403).json({
+            success: false,
+            message: 'Partner company can only create employee_partner in their company.'
+          });
+        }
+        break;
+      default:
+        return res.status(403).json({
+          success: false,
+          message: 'You do not have permission to create user.'
+        });
+    }
+
+    // Tạo user mới
     const user = await User.create({
       username,
       email,
       password,
-      fullName
+      fullName,
+      role: role || 'employee_partner',
+      company_id: company_id || null,
+      parent_id: parent_id || null
     });
 
-    // Don't return token on registration - user should login separately
     res.status(201).json({
       success: true,
       message: 'User registered successfully. User can now login with their credentials.',
@@ -103,6 +130,8 @@ const register = async (req, res, next) => {
           fullName: user.fullName,
           role: user.role,
           isActive: user.isActive,
+          company_id: user.company_id,
+          parent_id: user.parent_id,
           createdAt: user.createdAt
         }
       }

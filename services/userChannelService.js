@@ -3,12 +3,34 @@ const { Op } = require('sequelize');
 
 const getUserChannels = async (userId, page = 1, limit = 10) => {
   const offset = (page - 1) * limit;
+  const User = require('../models/User');
+  const user = await User.findByPk(userId);
 
-  // 1. Lấy danh sách channel_db_id mà user quản lý
-  const userChannelLinks = await UserChannel.findAll({
-    where: { user_id: userId, is_active: true }
-  });
-  const channelDbIds = userChannelLinks.map(link => link.channel_db_id);
+  let channelDbIds = [];
+  if (user.role === 'superadmin') {
+    // Lấy tất cả channel
+    const allChannels = await YouTubeChannel.findAll({ attributes: ['id'] });
+    channelDbIds = allChannels.map(c => c.id);
+  } else if (user.role === 'admin') {
+    // Lấy tất cả channel trừ của superadmin
+    // Tìm các channel mà owner không phải superadmin
+    const ownerLinks = await UserChannel.findAll({ where: { is_owner: true }, attributes: ['channel_db_id', 'user_id'] });
+    const User = require('../models/User');
+    const filteredChannelIds = [];
+    for (const link of ownerLinks) {
+      const owner = await User.findByPk(link.user_id);
+      if (owner && owner.role !== 'superadmin') {
+        filteredChannelIds.push(link.channel_db_id);
+      }
+    }
+    channelDbIds = filteredChannelIds;
+  } else {
+    // partner_company, employee_partner: chỉ lấy channel mình quản lý
+    const userChannelLinks = await UserChannel.findAll({
+      where: { user_id: userId, is_active: true }
+    });
+    channelDbIds = userChannelLinks.map(link => link.channel_db_id);
+  }
 
   // 2. Lấy thông tin chi tiết các channel, phân trang
   const { count, rows: channelRows } = await YouTubeChannel.findAndCountAll({
@@ -59,11 +81,31 @@ const getUserChannels = async (userId, page = 1, limit = 10) => {
  * @param {string} userRole
  */
 const deleteChannelById = async (channelDbId, userId, userRole) => {
-  // Kiểm tra quyền: admin hoặc owner của channel
+  // Lấy user và userChannel
+  const User = require('../models/User');
+  const user = await User.findByPk(userId);
   const userChannel = await UserChannel.findOne({
     where: { channel_db_id: channelDbId, user_id: userId, is_active: true }
   });
-  if (userRole !== 'admin' && (!userChannel || !userChannel.is_owner)) {
+
+  if (!user) throw new Error('User not found');
+
+  if (user.role === 'superadmin') {
+    // superadmin xóa mọi channel
+  } else if (user.role === 'admin') {
+    // admin không xóa channel của superadmin
+    const ownerUserChannel = await UserChannel.findOne({ where: { channel_db_id: channelDbId, is_owner: true } });
+    if (ownerUserChannel) {
+      const ownerUser = await User.findByPk(ownerUserChannel.user_id);
+      if (ownerUser && ownerUser.role === 'superadmin') {
+        throw new Error('You do not have permission to delete this channel');
+      }
+    }
+  } else if (user.role === 'partner_company' || user.role === 'employee_partner') {
+    if (!userChannel || !userChannel.is_owner) {
+      throw new Error('You do not have permission to delete this channel');
+    }
+  } else {
     throw new Error('You do not have permission to delete this channel');
   }
   // Xoá dữ liệu liên quan
@@ -111,13 +153,33 @@ const getChannelStatistics = async (channelDbId, days = 7) => {
  */
 const searchChannels = async (userId, searchTerm, page = 1, limit = 10) => {
   const offset = (page - 1) * limit;
-  
-  // Lấy danh sách channel_db_id mà user quản lý
-  const userChannelLinks = await UserChannel.findAll({
-    where: { user_id: userId, is_active: true }
-  });
-  const channelDbIds = userChannelLinks.map(link => link.channel_db_id);
-  
+  const User = require('../models/User');
+  const user = await User.findByPk(userId);
+
+  let channelDbIds = [];
+  if (user.role === 'superadmin') {
+    // Tìm mọi channel
+    const allChannels = await YouTubeChannel.findAll({ attributes: ['id'] });
+    channelDbIds = allChannels.map(c => c.id);
+  } else if (user.role === 'admin') {
+    // Tìm mọi channel trừ của superadmin
+    const ownerLinks = await UserChannel.findAll({ where: { is_owner: true }, attributes: ['channel_db_id', 'user_id'] });
+    const filteredChannelIds = [];
+    for (const link of ownerLinks) {
+      const owner = await User.findByPk(link.user_id);
+      if (owner && owner.role !== 'superadmin') {
+        filteredChannelIds.push(link.channel_db_id);
+      }
+    }
+    channelDbIds = filteredChannelIds;
+  } else {
+    // partner_company, employee_partner: chỉ tìm kiếm channel mình quản lý
+    const userChannelLinks = await UserChannel.findAll({
+      where: { user_id: userId, is_active: true }
+    });
+    channelDbIds = userChannelLinks.map(link => link.channel_db_id);
+  }
+
   if (!channelDbIds.length) {
     return {
       total: 0,
@@ -126,7 +188,7 @@ const searchChannels = async (userId, searchTerm, page = 1, limit = 10) => {
       channels: []
     };
   }
-  
+
   // Tìm kiếm channel theo từ khóa
   const { count, rows: channelRows } = await YouTubeChannel.findAndCountAll({
     where: {

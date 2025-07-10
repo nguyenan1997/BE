@@ -89,7 +89,7 @@ const authorizeRoles = (allowedRoles) => {
 
 // Check if user can access their own resource or is admin
 const authorizeOwnResource = (resourceUserIdField = 'id') => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.currentUser) {
       return res.status(401).json({
         success: false,
@@ -98,16 +98,35 @@ const authorizeOwnResource = (resourceUserIdField = 'id') => {
     }
 
     const resourceUserId = req.params[resourceUserIdField];
-    const currentUserId = req.currentUser.id;
+    const currentUser = req.currentUser;
 
-    // Allow if user is admin or accessing their own resource
-    if (req.currentUser.role === 'admin' || resourceUserId === currentUserId) {
+    if (currentUser.role === 'superadmin') {
+      return next(); // Superadmin thao tác với mọi user
+    }
+
+    if (currentUser.role === 'admin') {
+      // Admin không thao tác với superadmin hoặc admin khác
+      const targetUser = await User.findByPk(resourceUserId);
+      if (targetUser && targetUser.role !== 'superadmin' && targetUser.role !== 'admin') {
+        return next();
+      }
+    }
+
+    if (currentUser.role === 'partner_company') {
+      const targetUser = await User.findByPk(resourceUserId);
+      if (targetUser && targetUser.role === 'employee_partner' && targetUser.company_id === currentUser.company_id) {
+        return next();
+      }
+    }
+
+    // Chính mình
+    if (resourceUserId === currentUser.id) {
       return next();
     }
 
     return res.status(403).json({
       success: false,
-      message: 'Access denied. You can only access your own resources.'
+      message: 'Access denied. You can only access your own resources or those you manage.'
     });
   };
 };

@@ -8,6 +8,8 @@ const GoogleAccessToken = require('./GoogleAccessToken');
 const UserSchedule = require('./UserSchedule');
 const UserChannel = require('./UserChannel');
 const YoutubeHistoryLogs = require('./YoutubeHistoryLogs');
+const Company = require('./Company');
+const { UserPosition } = require('./Company');
 
 // User 1-n UserSchedule
 User.hasMany(UserSchedule, {
@@ -18,6 +20,13 @@ UserSchedule.belongsTo(User, {
   foreignKey: 'user_id',
   as: 'user'
 });
+
+// Company 1-n UserPosition
+Company.hasMany(UserPosition, { foreignKey: 'company_id', as: 'positions' });
+UserPosition.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+// UserPosition 1-n User
+UserPosition.hasMany(User, { foreignKey: 'user_position_id', as: 'users' });
+User.belongsTo(UserPosition, { foreignKey: 'user_position_id', as: 'position' });
 
 // YouTubeChannel 1-n ChannelStatistics
 YouTubeChannel.hasMany(ChannelStatistics, {
@@ -89,5 +98,7 @@ module.exports = {
   GoogleAccessToken,
   UserSchedule,
   UserChannel,
-  YoutubeHistoryLogs
+  YoutubeHistoryLogs,
+  Company,
+  UserPosition
 }; 

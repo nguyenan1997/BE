@@ -199,20 +199,41 @@ const getChannelStatisticsController = async (req, res) => {
   try {
     const { channelDbId } = req.params;
     const days = Math.min(parseInt(req.query.days), 7);
-    const userId = req.currentUser.id;
-    
-    // Kiểm tra quyền truy cập channel
-    const userChannel = await UserChannel.findOne({
-      where: { channel_db_id: channelDbId, user_id: userId, is_active: true }
-    });
-    
-    if (!userChannel) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'You do not have permission to access this channel' 
-      });
+    const currentUser = req.currentUser;
+    const User = require('../models/User');
+    const YouTubeChannel = require('../models/YouTubeChannel');
+    const UserChannel = require('../models/UserChannel');
+
+    // Lấy channel và owner
+    const channel = await YouTubeChannel.findByPk(channelDbId);
+    if (!channel) {
+      return res.status(404).json({ success: false, message: 'Channel not found' });
     }
-    
+    const ownerLink = await UserChannel.findOne({ where: { channel_db_id: channelDbId, is_owner: true } });
+    const owner = ownerLink ? await User.findByPk(ownerLink.user_id) : null;
+
+    // Phân quyền xem thống kê channel
+    switch (currentUser.role) {
+      case 'superadmin':
+        // Xem được mọi channel
+        break;
+      case 'admin':
+        if (owner && owner.role === 'superadmin') {
+          return res.status(403).json({ success: false, message: 'Admin cannot view channel of superadmin.' });
+        }
+        break;
+      case 'partner_company':
+      case 'employee_partner': {
+        const userChannel = await UserChannel.findOne({ where: { channel_db_id: channelDbId, user_id: currentUser.id, is_active: true } });
+        if (!userChannel) {
+          return res.status(403).json({ success: false, message: 'You do not have permission to access this channel' });
+        }
+        break;
+      }
+      default:
+        return res.status(403).json({ success: false, message: 'You do not have permission to access this channel' });
+    }
+
     const data = await getChannelStatistics(channelDbId, days);
     res.json({ success: true, data });
   } catch (err) {

@@ -11,7 +11,8 @@ const tables = [
   'user_schedules',
   'user_channel',
   'youtube_channels',
-  'users'
+  'users',
+  'companies'
 ];
 
 async function clearAllTables() {
