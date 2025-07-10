@@ -36,9 +36,9 @@ async function cleanupHistoryLogs() {
     }
   });
   if (deleted > 0) {
-    console.log(`🧹 Đã xóa ${deleted} bản ghi lịch sử đồng bộ cũ hơn 30 ngày.`);
+    console.log(`🧹 Deleted ${deleted} sync history records older than 30 days.`);
   } else {
-    console.log('🧹 Không có bản ghi lịch sử đồng bộ nào cần xóa.');
+    console.log('🧹 No sync history records to delete.');
   }
 }
 
