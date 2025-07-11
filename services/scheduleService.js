@@ -3,27 +3,27 @@ const { User, UserChannel, YouTubeChannel } = require('../models');
 const { syncYouTubeChannelData } = require('./youtubeSyncService');
 
 /**
- * Tạo hoặc cập nhật lịch cho user
- * @param {string} userId - ID của user
- * @param {Object} scheduleData - Dữ liệu lịch
- * @param {string} scheduleData.time_of_day - Giờ chạy (HH:MM:SS)
- * @param {string} scheduleData.start_date - Ngày bắt đầu (YYYY-MM-DD)
- * @param {boolean} scheduleData.is_active - Bật/tắt lịch
+ * Create or update user schedule
+ * @param {string} userId
+ * @param {Object} scheduleData
+ * @param {string} scheduleData.time_of_day
+ * @param {string} scheduleData.start_date
+ * @param {boolean} scheduleData.is_active
  */
 async function createOrUpdateSchedule(userId, scheduleData) {
   try {
     const { time_of_day, start_date, is_active = true } = scheduleData;
 
-    // Tính toán next_run_at
+    // Calculate next run time based on time_of_day and start_date
     const nextRunAt = calculateNextRun(time_of_day, start_date);
 
-    // Kiểm tra xem user đã có lịch chưa
+    // Test if user exists
     const existingSchedule = await UserSchedule.findOne({
       where: { user_id: userId }
     });
 
     if (existingSchedule) {
-      // Cập nhật lịch hiện tại
+      // Update existing schedule
       await existingSchedule.update({
         time_of_day,
         start_date,
@@ -32,7 +32,7 @@ async function createOrUpdateSchedule(userId, scheduleData) {
       });
       return existingSchedule;
     } else {
-      // Tạo lịch mới
+      // Create new schedule
       const newSchedule = await UserSchedule.create({
         user_id: userId,
         time_of_day,
@@ -49,8 +49,8 @@ async function createOrUpdateSchedule(userId, scheduleData) {
 }
 
 /**
- * Lấy lịch của user
- * @param {string} userId - ID của user
+ * Get user schedule by user ID
+ * @param {string} userId
  */
 async function getUserSchedule(userId) {
   try {
@@ -65,9 +65,9 @@ async function getUserSchedule(userId) {
 }
 
 /**
- * Bật/tắt lịch của user
- * @param {string} userId - ID của user
- * @param {boolean} isActive - Trạng thái bật/tắt
+ * Toggle schedule active status for a user
+ * @param {string} userId
+ * @param {boolean} isActive
  */
 async function toggleSchedule(userId, isActive) {
   try {
@@ -88,8 +88,8 @@ async function toggleSchedule(userId, isActive) {
 }
 
 /**
- * Xóa lịch của user
- * @param {string} userId - ID của user
+ * Delete user schedule
+ * @param {string} userId
  */
 async function deleteSchedule(userId) {
   try {
@@ -110,19 +110,19 @@ async function deleteSchedule(userId) {
 }
 
 /**
- * Tính toán thời gian chạy tiếp theo
- * @param {string} timeOfDay - Giờ chạy (HH:MM:SS)
- * @param {string} startDate - Ngày bắt đầu (YYYY-MM-DD)
+ * Calculate the next run time
+ * @param {string} timeOfDay - Run time (HH:MM:SS)
+ * @param {string} startDate - Start date (YYYY-MM-DD)
  */
 function calculateNextRun(timeOfDay, startDate) {
   const now = new Date();
   const [hours, minutes, seconds] = timeOfDay.split(':').map(Number);
   
-  // Tạo thời gian chạy hôm nay
+  // Create today's run time
   const todayRun = new Date();
   todayRun.setHours(hours, minutes, seconds, 0);
   
-  // Nếu giờ đã qua hôm nay, chuyển sang ngày mai
+  // If the time has passed today, move to tomorrow
   if (todayRun <= now) {
     todayRun.setDate(todayRun.getDate() + 1);
   }
@@ -134,8 +134,8 @@ function calculateNextRun(timeOfDay, startDate) {
 }
 
 /**
- * Thực hiện lịch cho user
- * @param {Object} schedule - Lịch cần thực hiện
+ * Execute schedule for user
+ * @param {Object} schedule - Schedule to execute
  */
 async function executeUserSchedule(schedule) {
   const { user_id, id: scheduleId } = schedule;
@@ -205,8 +205,8 @@ async function executeUserSchedule(schedule) {
 }
 
 /**
- * Cập nhật lịch sau khi chạy
- * @param {Object} schedule - Lịch cần cập nhật
+ * Update schedule after run
+ * @param {Object} schedule - Schedule to update
  */
 async function updateScheduleAfterRun(schedule) {
   const nextRunAt = calculateNextRun(schedule.time_of_day, schedule.start_date);
@@ -219,7 +219,7 @@ async function updateScheduleAfterRun(schedule) {
 }
 
 /**
- * Lấy tất cả lịch cần chạy
+ * Get all schedules to run
  */
 async function getSchedulesToRun() {
   try {
@@ -244,9 +244,9 @@ async function getSchedulesToRun() {
 }
 
 /**
- * Tạo lịch mới cho user
- * @param {string} userId - ID của user
- * @param {Object} scheduleData - Dữ liệu lịch
+ * Create new schedule for user
+ * @param {string} userId - User ID
+ * @param {Object} scheduleData - Schedule data
  */
 async function createSchedule(userId, scheduleData) {
   try {
@@ -267,8 +267,8 @@ async function createSchedule(userId, scheduleData) {
 }
 
 /**
- * Lấy tất cả lịch của user
- * @param {string} userId - ID của user
+ * Get all schedules of user
+ * @param {string} userId - User ID
  */
 async function getUserSchedules(userId) {
   try {
@@ -283,9 +283,9 @@ async function getUserSchedules(userId) {
 }
 
 /**
- * Bật/tắt lịch cụ thể
- * @param {string} scheduleId - ID của schedule
- * @param {boolean} isActive - Trạng thái bật/tắt
+ * Toggle specific schedule
+ * @param {string} scheduleId - Schedule ID
+ * @param {boolean} isActive - Active status
  */
 async function toggleSchedule(scheduleId, isActive) {
   try {
@@ -300,8 +300,8 @@ async function toggleSchedule(scheduleId, isActive) {
 }
 
 /**
- * Xóa lịch cụ thể
- * @param {string} scheduleId - ID của schedule
+ * Delete specific schedule
+ * @param {string} scheduleId - Schedule ID
  */
 async function deleteSchedule(scheduleId) {
   try {
@@ -316,9 +316,9 @@ async function deleteSchedule(scheduleId) {
 }
 
 /**
- * Sửa thông tin một lịch cụ thể
- * @param {string} scheduleId - ID của schedule
- * @param {Object} updateData - Dữ liệu cần update
+ * Update a specific schedule
+ * @param {string} scheduleId - Schedule ID
+ * @param {Object} updateData - Data to update
  */
 async function updateSchedule(scheduleId, updateData) {
   try {
