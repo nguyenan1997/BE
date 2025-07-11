@@ -14,7 +14,8 @@ users (1) ────┐
                         │                                                  │
                         ├── (N) channel_statistics                         │
                         ├── (N) channel_violations                         │
-                        └── (N) google_access_tokens                       │
+                        ├── (N) google_access_tokens                       │
+                        └── (N) youtube_history_logs (qua user_channel)    │
 ```
 
 - **users ↔ user_channel ↔ youtube_channels**: Một user có thể sở hữu hoặc được chia sẻ nhiều kênh (qua bảng phụ user_channel). Một kênh có thể thuộc nhiều user (chia sẻ quyền).
@@ -24,6 +25,7 @@ users (1) ────┐
 - **youtube_channels → channel_statistics**: Một kênh có nhiều thống kê tổng hợp theo ngày.
 - **youtube_channels → channel_violations**: Một kênh có nhiều vi phạm/cảnh báo.
 - **youtube_channels → google_access_tokens**: Một kênh có nhiều access token (lịch sử, refresh, v.v).
+- **user_channel → youtube_history_logs**: Mỗi liên kết user-channel có nhiều log lịch sử đồng bộ.
 
 ---
 
@@ -35,15 +37,17 @@ users (1) ────┐
 | email          | STRING(100)         | ✅       | Email (unique)                |
 | password       | STRING              | ✅       | Mật khẩu đã hash              |
 | fullName       | STRING(100)         | ✅       | Họ tên đầy đủ                 |
-| role           | ENUM(user, admin)   | ❌       | Quyền (mặc định: user)        |
-| isActive       | BOOLEAN             | ❌       | Trạng thái hoạt động          |
+| role           | ENUM(user, admin)   | ✅       | Quyền (mặc định: user)        |
+| isActive       | BOOLEAN             | ✅       | Trạng thái hoạt động          |
 | lastLoginAt    | DATE                | ❌       | Lần đăng nhập cuối            |
+| created_at     | DATE                |          | Thời gian tạo                 |
+| updated_at     | DATE                |          | Thời gian cập nhật            |
 
 ---
 
 ## 2. youtube_channels
 | Trường                | Kiểu dữ liệu     | Bắt buộc | Ý nghĩa                        |
-|-----------------------|------------------|----------|-------------------------------|
+|-----------------------|------------------|----------|--------------------------------|
 | id                    | UUID             | ✅       | Khóa chính                    |
 | channel_id            | STRING           | ✅       | ID kênh YouTube (unique)      |
 | channel_title         | STRING           | ✅       | Tên kênh                      |
@@ -56,6 +60,7 @@ users (1) ────┐
 | is_monitized          | BOOLEAN          | ❌       | Được kiếm tiền                |
 | total_view_count      | BIGINT           | ❌       | Tổng view (tại thời điểm sync)|
 | total_subscriber_count| INTEGER          | ❌       | Tổng subscriber               |
+| channel_email         | STRING           | ❌       | Email kênh                    |
 | created_at            | DATE             |          | Thời gian tạo                 |
 | updated_at            | DATE             |          | Thời gian cập nhật            |
 
@@ -70,16 +75,17 @@ users (1) ────┐
 | title          | STRING              | ❌       | Tiêu đề                       |
 | description    | TEXT                | ❌       | Mô tả                         |
 | published_at   | DATE                | ❌       | Ngày đăng                     |
-| thumbnail_url  | TEXT                | ❌       | Ảnh thumbnail                  |
+| thumbnail_url  | TEXT                | ❌       | Ảnh thumbnail                 |
 | duration       | STRING              | ❌       | Thời lượng (HH:MM:SS)         |
 | privacy_status | ENUM(public,private,unlisted) | ❌ | Trạng thái riêng tư           |
+| total_view_count | BIGINT             | ❌       | Tổng view video               |
 | created_at     | DATE                |          | Thời gian tạo                 |
 
 ---
 
 ## 4. video_statistics
-| Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                        |
-|--------------------|------------------|----------|-------------------------------|
+| Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                       |
+|--------------------|------------------|----------|--------------------------------|
 | id                 | UUID             | ✅       | Khóa chính                    |
 | video_db_id        | UUID             | ✅       | FK → videos.id                |
 | date               | DATEONLY         | ✅       | Ngày thống kê                 |
@@ -95,7 +101,7 @@ users (1) ────┐
 
 ## 5. channel_statistics
 | Trường             | Kiểu dữ liệu      | Bắt buộc | Ý nghĩa                        |
-|--------------------|------------------|----------|-------------------------------|
+|--------------------|------------------|----------|---------------------------------|
 | id                 | UUID             | ✅       | Khóa chính                    |
 | channel_db_id      | UUID             | ✅       | FK → youtube_channels.id      |
 | date               | DATEONLY         | ✅       | Ngày thống kê                 |
@@ -113,50 +119,71 @@ users (1) ────┐
 
 ## 6. channel_violations
 | Trường         | Kiểu dữ liệu         | Bắt buộc | Ý nghĩa                        |
-|----------------|---------------------|----------|-------------------------------|
+|----------------|---------------------|----------|---------------------------------|
 | id             | UUID                | ✅       | Khóa chính                    |
 | channel_db_id  | UUID                | ✅       | FK → youtube_channels.id      |
-| violation_type | ENUM(community, monetization) | ✅ | Loại vi phạm                  |
-| title          | TEXT                | ❌       | Tiêu đề                       |
+| violation_type | ENUM(copyright, community, monetization, spam, security, coppa, other) | ✅ | Loại vi phạm |
+| title          | STRING              | ✅       | Tiêu đề                       |
 | description    | TEXT                | ❌       | Mô tả                         |
-| status         | ENUM(active, resolved) | ❌    | Trạng thái (mặc định: active) |
-| violation_date | DATE                | ❌       | Ngày vi phạm                   |
+| status         | ENUM(active, resolved, pending) | ✅ | Trạng thái                   |
+| violation_date | DATE                | ✅       | Ngày vi phạm                   |
 | resolved_date  | DATE                | ❌       | Ngày giải quyết                |
 | created_at     | DATE                |          | Thời gian tạo                 |
+| updated_at     | DATE                |          | Thời gian cập nhật            |
 
 ---
 
 ## 7. google_access_tokens
 | Trường         | Kiểu dữ liệu         | Bắt buộc | Ý nghĩa                        |
-|----------------|---------------------|----------|-------------------------------|
+|----------------|---------------------|----------|---------------------------------|
 | id             | UUID                | ✅       | Khóa chính                    |
 | channel_db_id  | UUID                | ✅       | FK → youtube_channels.id      |
 | access_token   | TEXT                | ✅       | Access token                  |
 | refresh_token  | TEXT                | ❌       | Refresh token                 |
 | scope          | TEXT                | ❌       | Phạm vi quyền                 |
 | expires_at     | DATE                | ❌       | Hết hạn                       |
-| is_active      | BOOLEAN             | ❌       | Còn hiệu lực                  |
+| is_active      | BOOLEAN             | ✅       | Còn hiệu lực                  |
 | created_at     | DATE                |          | Thời gian tạo                 |
 
 ---
 
 ## 8. user_channel
 | Trường         | Kiểu dữ liệu         | Bắt buộc | Ý nghĩa                        |
-|----------------|---------------------|----------|-------------------------------|
+|----------------|---------------------|----------|---------------------------------|
 | id             | UUID                | ✅       | Khóa chính                    |
 | user_id        | UUID                | ✅       | FK → users.id                 |
 | channel_db_id  | UUID                | ✅       | FK → youtube_channels.id      |
-| is_owner       | BOOLEAN             | ❌       | Có phải chủ sở hữu            |
-| is_active      | BOOLEAN             | ❌       | Đang hoạt động                |
+| is_owner       | BOOLEAN             | ✅       | Có phải chủ sở hữu            |
+| is_active      | BOOLEAN             | ✅       | Đang hoạt động                |
 | created_at     | DATE                |          | Thời gian tạo                 |
+| updated_at     | DATE                |          | Thời gian cập nhật            |
 
 ---
 
 ## 9. user_schedules
 | Trường         | Kiểu dữ liệu         | Bắt buộc | Ý nghĩa                        |
-|----------------|---------------------|----------|-------------------------------|
+|----------------|---------------------|----------|---------------------------------|
 | id             | UUID                | ✅       | Khóa chính                    |
-| user_id        | UUID                | ✅       | FK → users.id (unique)        |
+| user_id        | UUID                | ✅       | FK → users.id                 |
 | time_of_day    | TIME                | ✅       | Thời gian thực hiện           |
-| is_active      | BOOLEAN             | ❌       | Đang hoạt động                |
+| start_date     | DATEONLY            | ✅       | Ngày bắt đầu                  |
+| is_active      | BOOLEAN             | ✅       | Đang hoạt động                |
+| last_run_at    | DATE                | ❌       | Lần chạy gần nhất             |
+| next_run_at    | DATE                | ✅       | Lần chạy tiếp theo            |
+| run_count      | INTEGER             | ✅       | Số lần đã chạy                |
 | created_at     | DATE                |          | Thời gian tạo                 |
+| updated_at     | DATE                |          | Thời gian cập nhật            |
+
+---
+
+## 10. youtube_history_logs
+| Trường           | Kiểu dữ liệu         | Bắt buộc | Ý nghĩa                        |
+|------------------|---------------------|----------|---------------------------------|
+| id               | UUID                | ✅       | Khóa chính                    |
+| user_channel_id  | UUID                | ✅       | FK → user_channel.id          |
+| status           | ENUM(success,failed)| ✅       | Kết quả đồng bộ               |
+| result           | TEXT                | ❌       | Nội dung kết quả              |
+| list_video_new   | JSONB               | ❌       | Danh sách video mới           |
+| finishedAt       | DATE                | ❌       | Thời điểm hoàn thành          |
+| created_at       | DATE                |          | Thời gian tạo                 |
+| updated_at       | DATE                |          | Thời gian cập nhật            |
