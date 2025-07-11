@@ -76,14 +76,37 @@ const UserChannel = require('../models/UserChannel');
 const getUserHistoryLogs = async (req, res) => {
   try {
     const userId = req.currentUser.id;
-    // Lấy tất cả user_channel_id của user hiện tại
     const userChannels = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
     const userChannelIds = userChannels.map(uc => uc.id);
     const logs = await YoutubeHistoryLogs.findAll({
       where: { user_channel_id: userChannelIds },
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: UserChannel,
+          as: 'user_channel',
+          include: [
+            {
+              model: require('../models/YouTubeChannel'),
+              as: 'youtube_channel',
+              attributes: ['channel_title']
+            }
+          ]
+        }
+      ]
     });
-    res.json({ success: true, data: logs });
+    // Format lại chỉ trả về các trường log cần thiết và channel_title
+    const result = logs.map(log => ({
+      id: log.id,
+      status: log.status,
+      result: log.result,
+      list_video_new: log.list_video_new,
+      finishedAt: log.finishedAt,
+      createdAt: log.createdAt,
+      updatedAt: log.updatedAt,
+      channel_title: log.user_channel?.youtube_channel?.channel_title || null
+    }));
+    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -127,7 +150,6 @@ const getChannelHistoryLogs = async (req, res) => {
   try {
     const { channelDbId } = req.params;
     const userId = req.currentUser.id;
-    // Lấy user_channel_id của user hiện tại với channel này
     const userChannel = await UserChannel.findOne({
       where: { user_id: userId, channel_db_id: channelDbId, is_active: true }
     });
@@ -139,9 +161,33 @@ const getChannelHistoryLogs = async (req, res) => {
     }
     const logs = await YoutubeHistoryLogs.findAll({
       where: { user_channel_id: userChannel.id },
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: UserChannel,
+          as: 'user_channel',
+          include: [
+            {
+              model: require('../models/YouTubeChannel'),
+              as: 'youtube_channel',
+              attributes: ['channel_title']
+            }
+          ]
+        }
+      ]
     });
-    res.json({ success: true, data: logs });
+    // Format lại chỉ trả về các trường log cần thiết và channel_title
+    const result = logs.map(log => ({
+      id: log.id,
+      status: log.status,
+      result: log.result,
+      list_video_new: log.list_video_new,
+      finishedAt: log.finishedAt,
+      createdAt: log.createdAt,
+      updatedAt: log.updatedAt,
+      channel_title: log.user_channel?.youtube_channel?.channel_title || null
+    }));
+    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
