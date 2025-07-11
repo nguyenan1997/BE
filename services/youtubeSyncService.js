@@ -387,9 +387,15 @@ async function syncYouTubeChannelData({
     result = analyticsError || "Sync failed for unknown reason";
   }
 
+  // Tìm user_channel
+  const userChannel = await UserChannel.findOne({
+    where: { user_id: userId, channel_db_id: channelDbId, is_active: true }
+  });
+  if (!userChannel) throw new Error('User does not have permission for this channel');
+
   // Ghi log lịch sử đồng bộ
   await YoutubeHistoryLogs.create({
-    channelDbId,
+    user_channel_id: userChannel.id,
     status: !analyticsError ? 'success' : 'failed',
     result, // result giờ chỉ là string
     list_video_new,

@@ -7,9 +7,13 @@ const YoutubeHistoryLogs = sequelize.define('YoutubeHistoryLogs', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  channelDbId: {
+  user_channel_id: {
     type: DataTypes.UUID,
     allowNull: false,
+    references: {
+      model: 'user_channel',
+      key: 'id'
+    }
   },
   status: {
     type: DataTypes.ENUM('success', 'failed'),
