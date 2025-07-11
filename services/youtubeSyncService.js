@@ -429,7 +429,7 @@ async function updateChannelViolationsFromWebhook(userId, channelDbId) {
   try {
     response = await axios.post(webhookUrl, {
       email: user.email,
-      channel_handle: channelHandle
+      custom_url: channelHandle
     });
   } catch (err) {
     throw new Error('Error calling n8n webhook: ' + err.message);
