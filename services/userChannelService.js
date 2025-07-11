@@ -70,7 +70,11 @@ const deleteChannelById = async (channelDbId, userId, userRole) => {
   await Video.destroy({ where: { channel_db_id: channelDbId } });
   await ChannelStatistics.destroy({ where: { channel_db_id: channelDbId } });
   await ChannelViolation.destroy({ where: { channel_db_id: channelDbId } });
-  await YoutubeHistoryLogs.destroy({ where: { channelDbId } });
+  const userChannels = await UserChannel.findAll({ where: { channel_db_id: channelDbId } });
+  const userChannelIds = userChannels.map(uc => uc.id);
+  if (userChannelIds.length > 0) {
+    await YoutubeHistoryLogs.destroy({ where: { user_channel_id: userChannelIds } });
+  }
   await UserChannel.destroy({ where: { channel_db_id: channelDbId } });
   // Xoá channel
   const deleted = await YouTubeChannel.destroy({ where: { id: channelDbId } });
