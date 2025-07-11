@@ -454,7 +454,6 @@ async function updateChannelViolationsFromWebhook(userId, channelDbId) {
  * @param {string} userId
  */
 async function updateAllChannelsViolationsForUser(userId) {
-  const UserChannel = require('../models/UserChannel');
   const links = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
   if (!links.length) {
     console.log('User does not have any channels to update violations.');
