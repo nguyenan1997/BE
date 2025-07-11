@@ -17,7 +17,7 @@ const {
 const ChannelViolation = require('../models/ChannelViolation');
 
 /**
- * Đồng bộ dữ liệu từ YouTube API vào database (bao gồm revenue)
+ * Sync data from YouTube API into the database (including revenue)
  * @param {Object} params
  * @param {string} params.userId
  * @param {string} params.channelId
@@ -40,7 +40,7 @@ async function syncYouTubeChannelData({
   expiresAt = null,
   channelEmail = null
 }) {
-  // Helper lấy field an toàn
+  // Helper to safely get field value
   const safe = (obj, path, def = null) => {
     try {
       return path
@@ -51,7 +51,7 @@ async function syncYouTubeChannelData({
     }
   };
 
-  // Nếu chưa có channelDbId, tra cứu từ DB
+  // If channelDbId is not provided, look up from DB
   let existingChannel = null;
   if (!channelDbId) {
     existingChannel = await YouTubeChannel.findOne({ where: { channel_id: channelId } });
@@ -60,7 +60,7 @@ async function syncYouTubeChannelData({
     existingChannel = await YouTubeChannel.findOne({ where: { id: channelDbId } });
   }
 
-  // Lấy access token từ database nếu không cung cấp
+  // Get access token from database if not provided
   if (!accessToken) {
     const tokenRecord = await GoogleAccessToken.findOne({
       where: { channel_db_id: channelDbId, is_active: true },
@@ -70,7 +70,7 @@ async function syncYouTubeChannelData({
       throw new Error("No active YouTube authorization found for user");
     }
 
-    // Check và refresh token nếu cần
+    // Check and refresh token if needed
     if (tokenRecord.expires_at && new Date() > tokenRecord.expires_at) {
       const refreshResult = await refreshAccessToken(tokenRecord.refresh_token);
       if (!refreshResult.success) {
@@ -88,7 +88,7 @@ async function syncYouTubeChannelData({
       accessToken = tokenRecord.access_token;
     }
 
-    // Kiểm tra quyền analytics
+    // Check analytics permission
     if (!tokenRecord.scope.includes("yt-analytics-monetary.readonly")) {
       console.warn(
         "User does not have YouTube Analytics access. Revenue data will be null."
@@ -96,7 +96,7 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // 1. Lấy thông tin kênh
+  // 1. Get channel info
   let channelRes;
   try{
     channelRes = await axios.get(
@@ -116,11 +116,11 @@ async function syncYouTubeChannelData({
   const channel = channelRes.data.items[0];
   if (!channel) throw new Error("Not found YouTube channel with ID: " + channelId);
 
-  // Lấy tổng view và tổng sub hiện tại
+  // Get current total view and subscriber count
   const totalViewCount = Number(channel.statistics.viewCount);
   const totalSubscriberCount = Number(channel.statistics.subscriberCount);
 
-  // 2. Lưu vào bảng youtube_channels
+  // 2. Save to youtube_channels table
   const dbChannel = await YouTubeChannel.upsert({
     channel_id: channel.id,
     channel_title: safe(channel, "snippet.title"),
@@ -140,7 +140,7 @@ async function syncYouTubeChannelData({
 
   channelDbId = dbChannel[0].id || dbChannel.id;
 
-  // --- Tạo liên kết user-channel nếu chưa có ---
+  // --- Create user-channel link if not exists ---
   const existingLink = await UserChannel.findOne({
     where: { user_id: userId, channel_db_id: channelDbId }
   });
@@ -153,7 +153,7 @@ async function syncYouTubeChannelData({
     });
   }
 
-  // --- Update/create AccessToken nếu accessToken được truyền vào ---
+  // --- Update/create AccessToken if accessToken is provided ---
   if (accessToken) {
     let tokenRecord = await GoogleAccessToken.findOne({
       where: { channel_db_id: channelDbId, is_active: true },
@@ -180,7 +180,7 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // 3. Lấy thống kê từng ngày cho kênh trong 9 ngày gần nhất
+  // 3. Get daily statistics for the channel for the last 9 days
   let channelStatsRows = [];
   let channelStatsHeaders = [];
   let analyticsError = null;
@@ -209,7 +209,7 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // 4. Lưu thống kê từng ngày vào channel_statistics (mapping động theo header)
+  // 4. Save daily statistics to channel_statistics (dynamic mapping by header)
   if (!analyticsError && channelStatsRows.length > 0) {
     for (const row of channelStatsRows) {
       const data = {};
@@ -230,7 +230,7 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // 5. Lấy danh sách videoId của kênh (playlist uploads)
+  // 5. Get the list of videoIds of the channel (uploads playlist)
   const uploadsPlaylistId = safe(
     channel,
     "contentDetails.relatedPlaylists.uploads"
@@ -256,7 +256,7 @@ async function syncYouTubeChannelData({
     nextPageToken = playlistRes.data.nextPageToken;
   } while (nextPageToken);
 
-  // 6. Lấy chi tiết video và thống kê từng ngày, lưu vào bảng videos, video_statistics
+  // 6. Get video details and daily statistics, save to videos, video_statistics tables
   for (let i = 0; i < videoIds.length; i += 50) {
     const batch = videoIds.slice(i, i + 50);
     const videosRes = await axios.get(
@@ -271,7 +271,7 @@ async function syncYouTubeChannelData({
     );
 
     for (const v of videosRes.data.items) {
-      // Kiểm tra video đã tồn tại chưa
+      // Check if video already exists
       const existingVideo = await Video.findOne({
         where: { channel_db_id: channelDbId, video_id: v.id }
       });
@@ -303,16 +303,16 @@ async function syncYouTubeChannelData({
           privacy_status: safe(v, "status.privacyStatus"),
           total_view_count: Number(safe(v, "statistics.viewCount")),
         });
-        // Luôn lấy lại bản ghi từ DB để lấy UUID
+        // Always fetch the record from DB to get UUID
         const createdVideo = await Video.findOne({
           where: { channel_db_id: channelDbId, video_id: v.id }
         });
         videoDbId = createdVideo.id;
       }
 
-      // Nếu có analytics, lưu vào video_statistics
+      // If analytics is available, save to video_statistics
       if (!analyticsError) {
-        // Lấy thống kê từng ngày cho video trong 9 ngày gần nhất
+        // Get daily statistics for the video for the last 9 days
         let videoStatsRows = [];
         let videoStatsHeaders = [];
         try {
@@ -360,7 +360,7 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // Lấy toàn bộ video hiện tại của channel
+  // Get all current videos of the channel
   const allVideos = await Video.findAll({
     where: { channel_db_id: channelDbId }
   });
@@ -378,17 +378,17 @@ async function syncYouTubeChannelData({
     result = analyticsError || "Sync failed for unknown reason";
   }
 
-  // Tìm user_channel
+  // Find user_channel
   const userChannel = await UserChannel.findOne({
     where: { user_id: userId, channel_db_id: channelDbId, is_active: true }
   });
   if (!userChannel) throw new Error('User does not have permission for this channel');
 
-  // Ghi log lịch sử đồng bộ
+  // Write sync history log
   await YoutubeHistoryLogs.create({
     user_channel_id: userChannel.id,
     status: !analyticsError ? 'success' : 'failed',
-    result, // result giờ chỉ là string
+    result, // result is now just a string
     list_video_new,
     finishedAt: new Date()
   });
@@ -405,22 +405,22 @@ async function syncYouTubeChannelData({
 }
 
 /**
- * Cập nhật cảnh báo vi phạm cho 1 channel từ webhook n8n
+ * Update channel violations for a channel from n8n webhook
  * @param {string} userId
  * @param {string} channelDbId
  */
 async function updateChannelViolationsFromWebhook(userId, channelDbId) {
-  // 1. Lấy thông tin user và channel
+  // 1. Get user and channel info
   const user = await User.findOne({ where: { id: userId } });
   const channel = await YouTubeChannel.findOne({ where: { id: channelDbId } });
   if (!user || !channel) throw new Error('User or Channel does not exist');
 
-  // 2. Lấy handle kênh (bỏ @ nếu có)
+  // 2. Get channel handle (remove @ if present)
   const channelHandle = channel.channel_custom_url
     ? channel.channel_custom_url.replace(/^@/, '')
     : channel.channel_id;
 
-  // 3. Gọi webhook n8n
+  // 3. Call n8n webhook
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
   let response;
   try {
@@ -437,10 +437,10 @@ async function updateChannelViolationsFromWebhook(userId, channelDbId) {
     throw new Error('Webhook returned invalid data');
   }
 
-  // 4. Xoá hết cảnh báo cũ của channel này
+  // 4. Delete all old violations of this channel
   await ChannelViolation.destroy({ where: { channel_db_id: channelDbId } });
 
-  // 5. Insert lại toàn bộ cảnh báo mới
+  // 5. Insert all new violations
   for (const v of data.violations) {
     await ChannelViolation.create({
       channel_db_id: channelDbId,
@@ -455,7 +455,7 @@ async function updateChannelViolationsFromWebhook(userId, channelDbId) {
 }
 
 /**
- * Cập nhật cảnh báo cho tất cả các channel của 1 user
+ * Update violations for all channels of a user
  * @param {string} userId
  */
 async function updateAllChannelsViolationsForUser(userId) {

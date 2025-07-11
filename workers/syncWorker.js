@@ -8,11 +8,11 @@ const connection = new IORedis(`${process.env.REDIS_HOST}:${process.env.REDIS_PO
   maxRetriesPerRequest: null
 });
 
-// Kết nối tới Socket.IO server
+// Connect to Socket.IO server
 const SOCKET_URL = `${process.env.SOCKET_HOST}:${process.env.SOCKET_PORT}`;
 const socket = ioClient(SOCKET_URL, { transports: ['websocket'] });
 
-// Worker lắng nghe queue 'syncQueue'
+// Worker listens to the 'syncQueue'
 const worker = new Worker('syncQueue', async job => {
   const { channelDbId } = job.data;
   socket.emit('job-status', {

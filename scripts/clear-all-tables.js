@@ -1,6 +1,6 @@
 const { sequelize } = require('../config/database');
 
-// Thứ tự xoá bảng phải đảm bảo không vi phạm khoá ngoại
+// The order of table deletion must ensure no foreign key violations
 const tables = [
   'youtube_history_logs',
   'video_statistics',
@@ -16,16 +16,16 @@ const tables = [
 
 async function clearAllTables() {
   try {
-    console.log('🚨 Bắt đầu xoá toàn bộ dữ liệu các bảng...');
+    console.log('🚨 Starting to delete all data from tables...');
     for (const table of tables) {
       await sequelize.query(`TRUNCATE TABLE "${table}" RESTART IDENTITY CASCADE;`);
-      console.log(`✅ Đã xoá toàn bộ dữ liệu bảng: ${table}`);
+      console.log(`✅ All data deleted from table: ${table}`);
     }
-    // Bật lại kiểm tra khoá ngoại
+    // Re-enable foreign key checks
     // await sequelize.query('SET session_replication_role = DEFAULT;');
-    console.log('🎉 Đã xoá sạch toàn bộ dữ liệu các bảng!');
+    console.log('🎉 All table data has been cleaned!');
   } catch (error) {
-    console.error('❌ Lỗi khi xoá bảng:', error);
+    console.error('❌ Error while deleting tables:', error);
   } finally {
     await sequelize.close();
   }

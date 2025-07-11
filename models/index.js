@@ -49,7 +49,7 @@ Video.belongsTo(YouTubeChannel, {
   as: 'youtube_channel'
 });
 
-// YouTubeChannel 1-1 GoogleAccessToken (nếu cần)
+// YouTubeChannel 1-1 GoogleAccessToken
 YouTubeChannel.hasOne(GoogleAccessToken, {
   foreignKey: 'channel_db_id',
   as: 'access_token'
@@ -69,7 +69,7 @@ VideoStatistics.belongsTo(Video, {
   as: 'video'
 });
 
-// User 1-n UserChannel (mapping quyền sở hữu/quản lý kênh)
+// User 1-n UserChannel
 User.hasMany(UserChannel, { foreignKey: 'user_id', as: 'user_channels' });
 UserChannel.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 YouTubeChannel.hasMany(UserChannel, { foreignKey: 'channel_db_id', as: 'user_channels' });

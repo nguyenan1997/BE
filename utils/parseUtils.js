@@ -1,4 +1,4 @@
-// Chuyển đổi chuỗi số dạng '1,8 N', '2,3 Tr', '1,2 T' thành số nguyên
+// Convert string like '1,8 N', '2,3 Tr', '1,2 T' to integer
 function parseViewCount(str) {
   if (!str) return null;
   str = String(str).trim();
@@ -12,10 +12,8 @@ function parseViewCount(str) {
   if (str.endsWith('T')) {
     return Math.round(parseFloat(str) * 1000000000);
   }
-  // Nếu chỉ là số
+  // If it's just a number
   return parseInt(str, 10);
 }
 
-module.exports = {
-  parseViewCount,
-}; 
+module.exports = { parseViewCount }; 

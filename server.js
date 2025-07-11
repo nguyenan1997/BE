@@ -35,15 +35,15 @@ const io = new Server(server, {
   }
 });
 
-// Lưu mapping userId <-> socketId
+// Save mapping userId <-> socketId
 const userSocketMap = new Map();
 
 io.on('connection', (socket) => {
-  // Nhận userId từ client khi kết nối
+  // Receive userId from client when connecting
   socket.on('register', (userId) => {
     userSocketMap.set(userId, socket.id);
   });
-  // Lắng nghe event job-status từ worker
+  // Listen for job-status event from worker
   socket.on('job-status', (data) => {
     const { userId } = data;
     const targetSocketId = userSocketMap.get(userId);
@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
       io.to(targetSocketId).emit('job-status', data);
     }
   });
-  // Xoá mapping khi disconnect
+  // Remove mapping when disconnect
   socket.on('disconnect', () => {
     for (const [userId, sid] of userSocketMap.entries()) {
       if (sid === socket.id) userSocketMap.delete(userId);
@@ -160,7 +160,7 @@ const startServer = async () => {
     // Initialize schedule cron
     initializeScheduleCron();
     
-    // Cron job dọn dẹp lịch sử đồng bộ cũ hơn 30 ngày, chạy lúc 3h sáng mỗi ngày
+    // Cron job to clean up sync history older than 30 days, runs at 3am every day
     cron.schedule('0 3 * * *', async () => {
       await cleanupHistoryLogs();
     });
