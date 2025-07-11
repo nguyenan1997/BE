@@ -38,8 +38,7 @@ async function syncYouTubeChannelData({
   scope = null,
   tokenType = null,
   expiresAt = null,
-  channelEmail = null,
-  jobId = null
+  channelEmail = null
 }) {
   // Helper lấy field an toàn
   const safe = (obj, path, def = null) => {
@@ -96,13 +95,6 @@ async function syncYouTubeChannelData({
       );
     }
   }
-
-  // Lấy dữ liệu cũ để tính diff
-  const oldChannel = existingChannel;
-  const oldSub = oldChannel ? Number(oldChannel.total_subscriber_count) : 0;
-  const oldView = oldChannel ? Number(oldChannel.total_view_count) : 0;
-  const oldVideos = await Video.findAll({ where: { channel_db_id: channelDbId } });
-  const oldVideoIds = oldVideos.map(v => v.video_id);
 
   // 1. Lấy thông tin kênh
   let channelRes;
@@ -368,7 +360,6 @@ async function syncYouTubeChannelData({
     }
   }
 
-  // Sau khi đã lấy xong videoIds từ API
   // Lấy toàn bộ video hiện tại của channel
   const allVideos = await Video.findAll({
     where: { channel_db_id: channelDbId }
@@ -401,6 +392,7 @@ async function syncYouTubeChannelData({
     list_video_new,
     finishedAt: new Date()
   });
+  await updateAllChannelsViolationsForUser(userId);
   return {
     status: !analyticsError ? 'success' : 'failed',
     result
