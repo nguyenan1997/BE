@@ -392,7 +392,7 @@ async function syncYouTubeChannelData({
     list_video_new,
     finishedAt: new Date()
   });
-  await updateAllChannelsViolationsForUser(userId);
+  // await updateAllChannelsViolationsForUser(userId);
   return {
     status: !analyticsError ? 'success' : 'failed',
     result
