@@ -4,20 +4,20 @@ const { Op } = require('sequelize');
 const getUserChannels = async (userId, page = 1, limit = 10) => {
   const offset = (page - 1) * limit;
 
-  // 1. Lấy danh sách channel_db_id mà user quản lý
+  // 1. Get all active channels for the user
   const userChannelLinks = await UserChannel.findAll({
     where: { user_id: userId, is_active: true }
   });
   const channelDbIds = userChannelLinks.map(link => link.channel_db_id);
 
-  // 2. Lấy thông tin chi tiết các channel, phân trang
+  // 2. Get channels with pagination
   const { count, rows: channelRows } = await YouTubeChannel.findAndCountAll({
     where: { id: channelDbIds },
     offset,
     limit
   });
 
-  // 3. Lấy tổng doanh thu của tất cả bản ghi ChannelStatistics cho từng channel trên trang hiện tại
+  // 3. Get total revenue for each channel in the current page
   const currentPageChannelIds = channelRows.map(channel => channel.id);
   const revenueStats = await ChannelStatistics.findAll({
     where: {
@@ -30,20 +30,20 @@ const getUserChannels = async (userId, page = 1, limit = 10) => {
     group: ['channel_db_id']
   });
 
-  // Tạo map channel_db_id -> tổng doanh thu
+  // Crete a map to store total revenue by channel_db_id
   const revenueMap = {};
   for (const stat of revenueStats) {
     revenueMap[stat.channel_db_id] = parseFloat(stat.get('total_revenue')) || 0;
   }
 
-  // 4. Gắn trường total_revenue_recent_days vào từng channel trả về
+  // 4. Map channels to include total revenue
   const channels = channelRows.map(channel => {
     const channelObj = channel.toJSON();
     channelObj.total_revenue_recent_days = revenueMap[channel.id] || 0;
     return channelObj;
   });
 
-  // 5. Trả về kết quả
+  // 5. Return the result
   return {
     total: count,
     page,
@@ -53,37 +53,38 @@ const getUserChannels = async (userId, page = 1, limit = 10) => {
 };
 
 /**
- * Xoá channel và toàn bộ dữ liệu liên quan
+ * Delete channel and all related data
  * @param {string} channelDbId
  * @param {string} userId
  * @param {string} userRole
  */
 const deleteChannelById = async (channelDbId, userId, userRole) => {
-  // Kiểm tra quyền: admin hoặc owner của channel
+  // Check permission: admin or channel owner
   const userChannel = await UserChannel.findOne({
     where: { channel_db_id: channelDbId, user_id: userId, is_active: true }
   });
   if (userRole !== 'admin' && (!userChannel || !userChannel.is_owner)) {
     throw new Error('You do not have permission to delete this channel');
   }
-  // Xoá dữ liệu liên quan
+  // Delete related data
   await Video.destroy({ where: { channel_db_id: channelDbId } });
   await ChannelStatistics.destroy({ where: { channel_db_id: channelDbId } });
   await ChannelViolation.destroy({ where: { channel_db_id: channelDbId } });
+  // Delete logs by user_channel_id
   const userChannels = await UserChannel.findAll({ where: { channel_db_id: channelDbId } });
   const userChannelIds = userChannels.map(uc => uc.id);
   if (userChannelIds.length > 0) {
     await YoutubeHistoryLogs.destroy({ where: { user_channel_id: userChannelIds } });
   }
   await UserChannel.destroy({ where: { channel_db_id: channelDbId } });
-  // Xoá channel
+  // Delete channel
   const deleted = await YouTubeChannel.destroy({ where: { id: channelDbId } });
   if (!deleted) throw new Error('No channel found to delete');
   return true;
 };
 
 /**
- * Lấy thống kê 7 ngày cho 1 channel cụ thể
+ * Get channel statistics for the last N days
  * @param {string} channelDbId
  * @param {number} days
  */
@@ -107,7 +108,7 @@ const getChannelStatistics = async (channelDbId, days = 7) => {
 };
 
 /**
- * Tìm kiếm channel theo từ khóa
+ * Search channels by title for a user
  * @param {string} userId
  * @param {string} searchTerm
  * @param {number} page
@@ -131,7 +132,7 @@ const searchChannels = async (userId, searchTerm, page = 1, limit = 10) => {
     };
   }
   
-  // Tìm kiếm channel theo từ khóa
+  // TSearch channels by title
   const { count, rows: channelRows } = await YouTubeChannel.findAndCountAll({
     where: {
       id: channelDbIds,
@@ -142,7 +143,7 @@ const searchChannels = async (userId, searchTerm, page = 1, limit = 10) => {
     order: [['channel_title', 'ASC']]
   });
   
-  // Lấy tổng doanh thu của các channel tìm được
+  // Get total revenue for each channel in the current page
   const currentPageChannelIds = channelRows.map(channel => channel.id);
   const revenueStats = await ChannelStatistics.findAll({
     where: {
@@ -155,13 +156,13 @@ const searchChannels = async (userId, searchTerm, page = 1, limit = 10) => {
     group: ['channel_db_id']
   });
   
-  // Tạo map channel_db_id -> tổng doanh thu
+  // Create a map to store total revenue by channel_db_id
   const revenueMap = {};
   for (const stat of revenueStats) {
     revenueMap[stat.channel_db_id] = parseFloat(stat.get('total_revenue')) || 0;
   }
   
-  // Gắn trường total_revenue_recent_days vào từng channel trả về
+  // Map channels to include total revenue
   const channels = channelRows.map(channel => {
     const channelObj = channel.toJSON();
     channelObj.total_revenue_recent_days = revenueMap[channel.id] || 0;

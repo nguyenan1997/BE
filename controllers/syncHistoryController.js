@@ -72,7 +72,7 @@ const UserChannel = require('../models/UserChannel');
  */
 
 
-// Lấy lịch sử của user hiện tại
+// Get sync history for the current user
 const getUserHistoryLogs = async (req, res) => {
   try {
     const userId = req.currentUser.id;
@@ -95,7 +95,7 @@ const getUserHistoryLogs = async (req, res) => {
         }
       ]
     });
-    // Format lại chỉ trả về các trường log cần thiết và channel_title
+    // Format result: only return necessary log fields and channel_title
     const result = logs.map(log => ({
       id: log.id,
       status: log.status,
@@ -145,7 +145,7 @@ const getUserHistoryLogs = async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-// Lấy lịch sử của một channel cụ thể (chỉ lịch sử của user hiện tại)
+// Get sync history for a specific channel (only for the current user)
 const getChannelHistoryLogs = async (req, res) => {
   try {
     const { channelDbId } = req.params;
@@ -176,7 +176,7 @@ const getChannelHistoryLogs = async (req, res) => {
         }
       ]
     });
-    // Format lại chỉ trả về các trường log cần thiết và channel_title
+    // Format result: only return necessary log fields and channel_title
     const result = logs.map(log => ({
       id: log.id,
       status: log.status,

@@ -112,9 +112,8 @@ async function deleteSchedule(userId) {
 /**
  * Calculate the next run time
  * @param {string} timeOfDay - Run time (HH:MM:SS)
- * @param {string} startDate - Start date (YYYY-MM-DD)
  */
-function calculateNextRun(timeOfDay, startDate) {
+function calculateNextRun(timeOfDay) {
   const now = new Date();
   const [hours, minutes, seconds] = timeOfDay.split(':').map(Number);
   
@@ -193,10 +192,8 @@ async function executeUserSchedule(schedule) {
     // 4. Log kết quả
     const successfulSyncs = results.filter(r => r.success).length;
     const failedSyncs = results.filter(r => !r.success).length;
-    
     console.log(`✅ Schedule ${scheduleId} completed: ${successfulSyncs} successful, ${failedSyncs} failed`);
     
-    // TODO: Có thể thêm gửi thông báo cho user ở đây
     
   } catch (error) {
     console.error(`❌ Error executing schedule ${scheduleId}:`, error);

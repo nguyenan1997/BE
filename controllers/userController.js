@@ -151,7 +151,7 @@ const updateUser = async (req, res, next) => {
       });
     }
 
-    // Nếu không phải admin, không cho phép đổi role và isActive
+    // If the user is not an admin, restrict certain fields
     if (req.currentUser.role !== 'admin') {
       if ('role' in fieldsToUpdate || 'isActive' in fieldsToUpdate) {
         return res.status(403).json({
@@ -181,7 +181,7 @@ const updateUser = async (req, res, next) => {
       }
     }
 
-    // Đổi mật khẩu nếu có newPassword
+    // Change password if provided
     if (newPassword) {
       const isMatch = await user.comparePassword(currentPassword);
       if (!isMatch) {
@@ -297,7 +297,7 @@ const toggleUserStatus = async (req, res, next) => {
       });
     }
 
-    // Không cho phép admin tự vô hiệu hóa chính mình
+    // Check if the current user is trying to deactivate themselves
     if (req.currentUser.id === user.id) {
       return res.status(403).json({
         success: false,
