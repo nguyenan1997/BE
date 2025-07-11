@@ -76,10 +76,11 @@ const UserChannel = require('../models/UserChannel');
 const getUserHistoryLogs = async (req, res) => {
   try {
     const userId = req.currentUser.id;
-    const links = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
-    const channelDbIds = links.map(link => link.channel_db_id);
+    // Lấy tất cả user_channel_id của user hiện tại
+    const userChannels = await UserChannel.findAll({ where: { user_id: userId, is_active: true } });
+    const userChannelIds = userChannels.map(uc => uc.id);
     const logs = await YoutubeHistoryLogs.findAll({
-      where: { channelDbId: channelDbIds },
+      where: { user_channel_id: userChannelIds },
       order: [['createdAt', 'DESC']]
     });
     res.json({ success: true, data: logs });
@@ -121,12 +122,23 @@ const getUserHistoryLogs = async (req, res) => {
  *       500:
  *         description: Internal server error
  */
-// Lấy lịch sử của một channel cụ thể
+// Lấy lịch sử của một channel cụ thể (chỉ lịch sử của user hiện tại)
 const getChannelHistoryLogs = async (req, res) => {
   try {
     const { channelDbId } = req.params;
+    const userId = req.currentUser.id;
+    // Lấy user_channel_id của user hiện tại với channel này
+    const userChannel = await UserChannel.findOne({
+      where: { user_id: userId, channel_db_id: channelDbId, is_active: true }
+    });
+    if (!userChannel) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền truy cập lịch sử của channel này'
+      });
+    }
     const logs = await YoutubeHistoryLogs.findAll({
-      where: { channelDbId },
+      where: { user_channel_id: userChannel.id },
       order: [['createdAt', 'DESC']]
     });
     res.json({ success: true, data: logs });

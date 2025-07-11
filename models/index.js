@@ -75,9 +75,9 @@ UserChannel.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 YouTubeChannel.hasMany(UserChannel, { foreignKey: 'channel_db_id', as: 'user_channels' });
 UserChannel.belongsTo(YouTubeChannel, { foreignKey: 'channel_db_id', as: 'youtube_channel' });
 
-// YoutubeHistoryLogs belongsTo YouTubeChannel
-YoutubeHistoryLogs.belongsTo(YouTubeChannel, { foreignKey: 'channelDbId', as: 'youtube_channel' });
-YouTubeChannel.hasMany(YoutubeHistoryLogs, { foreignKey: 'channelDbId', as: 'youtube_history_logs' });
+// YoutubeHistoryLogs belongsTo UserChannel
+YoutubeHistoryLogs.belongsTo(UserChannel, { foreignKey: 'user_channel_id', as: 'user_channel' });
+UserChannel.hasMany(YoutubeHistoryLogs, { foreignKey: 'user_channel_id', as: 'youtube_history_logs' });
 
 module.exports = {
   User,
