@@ -134,7 +134,7 @@ const getChannelHistoryLogs = async (req, res) => {
     if (!userChannel) {
       return res.status(403).json({
         success: false,
-        message: 'Bạn không có quyền truy cập lịch sử của channel này'
+        message: 'You do not have access to this channel history.'
       });
     }
     const logs = await YoutubeHistoryLogs.findAll({
